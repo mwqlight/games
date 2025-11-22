@@ -23,23 +23,25 @@
         </div>
       </div>
       <div class="game-board">
-        <div 
-          class="board-cell" 
-          v-for="(row, rowIndex) in board" 
-          :key="rowIndex"
-          :class="{
-            'white': (rowIndex + colIndex) % 2 === 0,
-            'black': (rowIndex + colIndex) % 2 === 1,
-            'selected': selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex,
-            'valid-move': cell.validMove
-          }"
-          @click="makeMove(rowIndex, colIndex)"
-        >
-          <div v-if="cell.value !== 0">
-            <span>{{ getPieceSymbol(cell.value) }}</span>
-          </div>
-          <div v-else-if="cell.validMove">
-            <span>✓</span>
+        <div v-for="(row, rowIndex) in board" :key="rowIndex">
+          <div 
+            class="board-cell" 
+            v-for="(cell, colIndex) in row"
+            :key="colIndex"
+            :class="{
+              'white': (rowIndex + colIndex) % 2 === 0,
+              'black': (rowIndex + colIndex) % 2 === 1,
+              'selected': selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex,
+              'valid-move': cell.validMove
+            }"
+            @click="makeMove(rowIndex, colIndex)"
+          >
+            <div v-if="cell.value !== 0">
+              <span>{{ getPieceSymbol(cell.value) }}</span>
+            </div>
+            <div v-else-if="cell.validMove">
+              <span>✓</span>
+            </div>
           </div>
         </div>
       </div>
@@ -58,6 +60,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
@@ -71,6 +74,8 @@ const currentPlayer = ref(1)
 const gameStarted = ref(false)
 const gamePaused = ref(false)
 const timer = ref(null)
+const gameId = ref(null)
+const time = ref(0)
 
 // 游戏配置
 const boardSize = ref(8)
@@ -89,7 +94,7 @@ const pieceTypes = {
 }
 
 // 初始化游戏
-const initGame = () => {
+const initGame = async () => {
   // 清除计时器
   if (timer.value) {
     clearInterval(timer.value)
@@ -111,14 +116,23 @@ const initGame = () => {
   // 初始化选中单元格
   selectedCell.value = null
   
-  // 生成棋盘
-  generateBoard()
-  
-  // 设置初始棋子
-  setInitialPieces()
-  
-  // 检查有效移动
-  checkValidMoves()
+  // 创建新游戏
+  try {
+    const response = await axios.post('/api/chess/game')
+    gameId.value = response.data.gameId
+    
+    // 生成棋盘
+    generateBoard()
+    
+    // 设置初始棋子
+    setInitialPieces()
+    
+    // 检查有效移动
+    checkValidMoves()
+  } catch (error) {
+    console.error('Failed to create game:', error)
+    gameStatus.value = '创建游戏失败'
+  }
 }
 
 // 生成棋盘
@@ -445,7 +459,7 @@ const isOpponentPiece = (value) => {
 }
 
 // 下棋
-const makeMove = (rowIndex, colIndex) => {
+const makeMove = async (rowIndex, colIndex) => {
   if (!gameStarted.value || gamePaused.value) {
     return
   }
@@ -455,16 +469,37 @@ const makeMove = (rowIndex, colIndex) => {
     // 检查是否是有效移动
     if (board.value[rowIndex][colIndex].validMove) {
       // 移动棋子
-      movePiece(selectedCell.value.row, selectedCell.value.col, rowIndex, colIndex)
-      
-      // 清除选中状态
-      selectedCell.value = null
-      
-      // 检查有效移动
-      checkValidMoves()
-      
-      // 检查游戏是否结束
-      checkGameEnd()
+      try {
+        const response = await axios.post(`/api/chess/game/${gameId.value}/move`, {
+          fromRow: selectedCell.value.row,
+          fromCol: selectedCell.value.col,
+          toRow: rowIndex,
+          toCol: colIndex,
+          player: currentPlayer.value === 1 ? 'WHITE' : 'BLACK'
+        })
+        
+        // 更新游戏状态
+        const game = response.data
+        currentPlayer.value = game.currentPlayer === 'WHITE' ? 1 : 2
+        gameStatus.value = game.status
+        
+        // 更新棋盘
+        updateBoard(game.board)
+        
+        // 清除选中状态
+        selectedCell.value = null
+        
+        // 检查有效移动
+        checkValidMoves()
+        
+        // 检查游戏是否结束
+        if (game.status === 'CHECKMATE' || game.status === 'STALEMATE') {
+          clearInterval(timer.value)
+        }
+      } catch (error) {
+        console.error('Failed to make move:', error)
+        gameStatus.value = '移动失败'
+      }
     } else {
       // 检查是否是当前玩家的棋子
       if (isCurrentPlayerPiece(board.value[rowIndex][colIndex].value)) {
@@ -484,61 +519,26 @@ const makeMove = (rowIndex, colIndex) => {
   }
 }
 
-// 移动棋子
-const movePiece = (fromRow, fromCol, toRow, toCol) => {
-  // 获取棋子类型
-  const pieceType = board.value[fromRow][fromCol].value
-  
-  // 检查是否吃掉对方棋子
-  if (isOpponentPiece(board.value[toRow][toCol].value)) {
-    // 更新棋子数量
-    if (currentPlayer.value === 1) {
-      blackCount.value--
-    } else {
-      whiteCount.value--
-    }
-  }
-  
-  // 移动棋子
-  board.value[toRow][toCol].value = pieceType
-  board.value[fromRow][fromCol].value = 0
-  
-  // 切换玩家
-  currentPlayer.value = currentPlayer.value === 1 ? 2 : 1
-}
-
-// 检查游戏结束
-const checkGameEnd = () => {
-  // 检查是否有有效移动
-  let hasValidMove = false
-  
+// 更新棋盘
+const updateBoard = (chessPieces) => {
+  // 清除棋盘
   for (let row = 0; row < boardSize.value; row++) {
     for (let col = 0; col < boardSize.value; col++) {
-      if (board.value[row][col].validMove) {
-        hasValidMove = true
-        break
-      }
-    }
-    
-    if (hasValidMove) {
-      break
+      board.value[row][col].value = 0
     }
   }
   
-  if (!hasValidMove) {
-    // 游戏结束
-    gameStatus.value = '游戏结束'
-    clearInterval(timer.value)
+  // 更新棋子
+  chessPieces.forEach(piece => {
+    const row = piece.row
+    const col = piece.col
+    const pieceType = piece.pieceType
+    const player = piece.player
     
-    // 计算得分
-    if (whiteCount.value > blackCount.value) {
-      score.value = whiteCount.value - blackCount.value
-    } else if (blackCount.value > whiteCount.value) {
-      score.value = blackCount.value - whiteCount.value
-    } else {
-      score.value = 0
-    }
-  }
+    // 转换为前端棋子值
+    const value = pieceType + (player === 'WHITE' ? 10 : 20)
+    board.value[row][col].value = value
+  })
 }
 
 // 开始游戏
@@ -678,6 +678,10 @@ onUnmounted(() => {
   overflow: hidden;
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+}
+
+.game-board > div {
+  display: contents;
 }
 
 .board-cell {

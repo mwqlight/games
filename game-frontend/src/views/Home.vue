@@ -77,7 +77,7 @@ const games = ref([
     description: '全球流行，战术层次丰富', 
     icon: Star, 
     iconColor: '#909399', 
-    path: '/international-chess' 
+    path: '/chess' 
   },
   { 
     id: 6, 

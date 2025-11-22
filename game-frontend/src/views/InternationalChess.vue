@@ -9,18 +9,23 @@
     </header>
     <main class="game-main">
       <div class="game-board">
-        <div class="board-row" v-for="(row, rowIndex) in board" :key="rowIndex">
+        <div class="board-row" v-for="(row, rowIndex) in gameStore.board" :key="rowIndex">
           <div 
             class="board-cell" 
             v-for="(cell, colIndex) in row" 
             :key="colIndex"
-            :class="{ 'black-cell': (rowIndex + colIndex) % 2 === 1, 'white-cell': (rowIndex + colIndex) % 2 === 0 }"
-            @click="makeMove(rowIndex, colIndex)"
+            :class="{
+              'black-cell': (rowIndex + colIndex) % 2 === 1,
+              'white-cell': (rowIndex + colIndex) % 2 === 0,
+              'selected': gameStore.selectedPiece && gameStore.selectedPiece.x === rowIndex && gameStore.selectedPiece.y === colIndex,
+              'valid-move': isValidMove(rowIndex, colIndex)
+            }"
+            @click="handleCellClick(rowIndex, colIndex)"
           >
             <div 
               class="piece" 
               v-if="cell !== null"
-              :class="{ 'white-piece': cell.color === 'white', 'black-piece': cell.color === 'black' }"
+              :class="{ 'white-piece': cell.color === 'WHITE', 'black-piece': cell.color === 'BLACK' }"
             >
               {{ getPieceSymbol(cell.type) }}
             </div>
@@ -28,482 +33,83 @@
         </div>
       </div>
       <div class="game-status">
-        <h2>{{ currentPlayer === 'white' ? '白方' : '黑方' }}回合</h2>
-        <p>{{ gameStatus }}</p>
+        <h2>{{ gameStore.currentPlayer === 'WHITE' ? '白方' : '黑方' }}回合</h2>
+        <p>{{ getGameStatusText() }}</p>
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useGameStore } from '../stores/game'
 
 const router = useRouter()
-
-// 初始化棋盘
-const board = ref([])
-const currentPlayer = ref('white')
-const gameStatus = ref('游戏进行中')
+const gameStore = useGameStore()
 
 // 初始化游戏
-const initGame = () => {
-  // 创建一个8x8的棋盘
-  board.value = Array(8).fill(null).map(() => Array(8).fill(null))
-  
-  // 放置白方棋子
-  board.value[0][0] = { color: 'white', type: 'rook' }
-  board.value[0][1] = { color: 'white', type: 'knight' }
-  board.value[0][2] = { color: 'white', type: 'bishop' }
-  board.value[0][3] = { color: 'white', type: 'queen' }
-  board.value[0][4] = { color: 'white', type: 'king' }
-  board.value[0][5] = { color: 'white', type: 'bishop' }
-  board.value[0][6] = { color: 'white', type: 'knight' }
-  board.value[0][7] = { color: 'white', type: 'rook' }
-  
-  for (let col = 0; col < 8; col++) {
-    board.value[1][col] = { color: 'white', type: 'pawn' }
-  }
-  
-  // 放置黑方棋子
-  board.value[7][0] = { color: 'black', type: 'rook' }
-  board.value[7][1] = { color: 'black', type: 'knight' }
-  board.value[7][2] = { color: 'black', type: 'bishop' }
-  board.value[7][3] = { color: 'black', type: 'queen' }
-  board.value[7][4] = { color: 'black', type: 'king' }
-  board.value[7][5] = { color: 'black', type: 'bishop' }
-  board.value[7][6] = { color: 'black', type: 'knight' }
-  board.value[7][7] = { color: 'black', type: 'rook' }
-  
-  for (let col = 0; col < 8; col++) {
-    board.value[6][col] = { color: 'black', type: 'pawn' }
-  }
-  
-  currentPlayer.value = 'white'
-  gameStatus.value = '游戏进行中'
+const initGame = async () => {
+  await gameStore.startGame()
 }
 
 // 获取棋子符号
 const getPieceSymbol = (type) => {
   switch (type) {
-    case 'rook': return '♖'
-    case 'knight': return '♘'
-    case 'bishop': return '♗'
-    case 'queen': return '♕'
-    case 'king': return '♔'
-    case 'pawn': return '♙'
+    case 'ROOK': return '♖'
+    case 'KNIGHT': return '♘'
+    case 'BISHOP': return '♗'
+    case 'QUEEN': return '♕'
+    case 'KING': return '♔'
+    case 'PAWN': return '♙'
     default: return ''
   }
 }
 
-// 处理移动
-const makeMove = (rowIndex, colIndex) => {
-  // 检查当前位置是否有棋子
-  const piece = board.value[rowIndex][colIndex]
-  if (piece === null || piece.color !== currentPlayer.value) {
-    return
-  }
-  
-  // 检查是否可以移动
-  const validMoves = getValidMoves(rowIndex, colIndex)
-  if (validMoves.length === 0) {
-    return
-  }
-  
-  // 移动棋子
-  board.value[rowIndex][colIndex] = null
-  board.value[validMoves[0].row][validMoves[0].col] = piece
-  
-  // 切换玩家
-  currentPlayer.value = currentPlayer.value === 'white' ? 'black' : 'white'
-  
-  // 检查游戏是否结束
-  checkGameEnd()
-}
-
-// 获取有效移动
-const getValidMoves = (rowIndex, colIndex) => {
-  const moves = []
-  const piece = board.value[rowIndex][colIndex]
-  
-  switch (piece.type) {
-    case 'pawn':
-      // 处理兵的移动
-      const direction = piece.color === 'white' ? 1 : -1
-      
-      // 向前移动一格
-      if (rowIndex + direction >= 0 && rowIndex + direction < 8 && 
-          board.value[rowIndex + direction][colIndex] === null) {
-        moves.push({ row: rowIndex + direction, col: colIndex })
-        
-        // 初始位置可以向前移动两格
-        if ((piece.color === 'white' && rowIndex === 1) || (piece.color === 'black' && rowIndex === 6)) {
-          if (board.value[rowIndex + direction * 2][colIndex] === null) {
-            moves.push({ row: rowIndex + direction * 2, col: colIndex })
-          }
-        }
-      }
-      
-      // 吃子
-      if (rowIndex + direction >= 0 && rowIndex + direction < 8) {
-        // 左前方吃子
-        if (colIndex - 1 >= 0 && 
-            board.value[rowIndex + direction][colIndex - 1] !== null && 
-            board.value[rowIndex + direction][colIndex - 1].color !== piece.color) {
-          moves.push({ row: rowIndex + direction, col: colIndex - 1 })
-        }
-        
-        // 右前方吃子
-        if (colIndex + 1 < 8 && 
-            board.value[rowIndex + direction][colIndex + 1] !== null && 
-            board.value[rowIndex + direction][colIndex + 1].color !== piece.color) {
-          moves.push({ row: rowIndex + direction, col: colIndex + 1 })
-        }
-      }
-      break
-    
-    case 'rook':
-      // 处理车的移动
-      // 向上移动
-      for (let row = rowIndex - 1; row >= 0; row--) {
-        if (board.value[row][colIndex] === null) {
-          moves.push({ row, col: colIndex })
-        } else if (board.value[row][colIndex].color !== piece.color) {
-          moves.push({ row, col: colIndex })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 向下移动
-      for (let row = rowIndex + 1; row < 8; row++) {
-        if (board.value[row][colIndex] === null) {
-          moves.push({ row, col: colIndex })
-        } else if (board.value[row][colIndex].color !== piece.color) {
-          moves.push({ row, col: colIndex })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 向左移动
-      for (let col = colIndex - 1; col >= 0; col--) {
-        if (board.value[rowIndex][col] === null) {
-          moves.push({ row: rowIndex, col })
-        } else if (board.value[rowIndex][col].color !== piece.color) {
-          moves.push({ row: rowIndex, col })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 向右移动
-      for (let col = colIndex + 1; col < 8; col++) {
-        if (board.value[rowIndex][col] === null) {
-          moves.push({ row: rowIndex, col })
-        } else if (board.value[rowIndex][col].color !== piece.color) {
-          moves.push({ row: rowIndex, col })
-          break
-        } else {
-          break
-        }
-      }
-      break
-    
-    case 'knight':
-      // 处理马的移动
-      const knightMoves = [
-        { row: -2, col: -1 },
-        { row: -2, col: 1 },
-        { row: -1, col: -2 },
-        { row: -1, col: 2 },
-        { row: 1, col: -2 },
-        { row: 1, col: 2 },
-        { row: 2, col: -1 },
-        { row: 2, col: 1 }
-      ]
-      
-      for (const move of knightMoves) {
-        const newRow = rowIndex + move.row
-        const newCol = colIndex + move.col
-        
-        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-          if (board.value[newRow][newCol] === null || 
-              board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-          }
-        }
-      }
-      break
-    
-    case 'bishop':
-      // 处理象的移动
-      // 左上移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex - i
-        const newCol = colIndex - i
-        
-        if (newRow >= 0 && newCol >= 0) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      
-      // 右上移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex - i
-        const newCol = colIndex + i
-        
-        if (newRow >= 0 && newCol < 8) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      
-      // 左下移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex + i
-        const newCol = colIndex - i
-        
-        if (newRow < 8 && newCol >= 0) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      
-      // 右下移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex + i
-        const newCol = colIndex + i
-        
-        if (newRow < 8 && newCol < 8) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      break
-    
-    case 'queen':
-      // 处理后的移动（结合车和象的移动）
-      // 向上移动
-      for (let row = rowIndex - 1; row >= 0; row--) {
-        if (board.value[row][colIndex] === null) {
-          moves.push({ row, col: colIndex })
-        } else if (board.value[row][colIndex].color !== piece.color) {
-          moves.push({ row, col: colIndex })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 向下移动
-      for (let row = rowIndex + 1; row < 8; row++) {
-        if (board.value[row][colIndex] === null) {
-          moves.push({ row, col: colIndex })
-        } else if (board.value[row][colIndex].color !== piece.color) {
-          moves.push({ row, col: colIndex })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 向左移动
-      for (let col = colIndex - 1; col >= 0; col--) {
-        if (board.value[rowIndex][col] === null) {
-          moves.push({ row: rowIndex, col })
-        } else if (board.value[rowIndex][col].color !== piece.color) {
-          moves.push({ row: rowIndex, col })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 向右移动
-      for (let col = colIndex + 1; col < 8; col++) {
-        if (board.value[rowIndex][col] === null) {
-          moves.push({ row: rowIndex, col })
-        } else if (board.value[rowIndex][col].color !== piece.color) {
-          moves.push({ row: rowIndex, col })
-          break
-        } else {
-          break
-        }
-      }
-      
-      // 左上移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex - i
-        const newCol = colIndex - i
-        
-        if (newRow >= 0 && newCol >= 0) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      
-      // 右上移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex - i
-        const newCol = colIndex + i
-        
-        if (newRow >= 0 && newCol < 8) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      
-      // 左下移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex + i
-        const newCol = colIndex - i
-        
-        if (newRow < 8 && newCol >= 0) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      
-      // 右下移动
-      for (let i = 1; i < 8; i++) {
-        const newRow = rowIndex + i
-        const newCol = colIndex + i
-        
-        if (newRow < 8 && newCol < 8) {
-          if (board.value[newRow][newCol] === null) {
-            moves.push({ row: newRow, col: newCol })
-          } else if (board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-            break
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-      break
-    
-    case 'king':
-      // 处理王的移动
-      const kingMoves = [
-        { row: -1, col: -1 },
-        { row: -1, col: 0 },
-        { row: -1, col: 1 },
-        { row: 0, col: -1 },
-        { row: 0, col: 1 },
-        { row: 1, col: -1 },
-        { row: 1, col: 0 },
-        { row: 1, col: 1 }
-      ]
-      
-      for (const move of kingMoves) {
-        const newRow = rowIndex + move.row
-        const newCol = colIndex + move.col
-        
-        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-          if (board.value[newRow][newCol] === null || 
-              board.value[newRow][newCol].color !== piece.color) {
-            moves.push({ row: newRow, col: newCol })
-          }
-        }
-      }
-      break
-  }
-  
-  return moves
-}
-
-// 检查游戏结束
-const checkGameEnd = () => {
-  // 检查是否有玩家没有王
-  let whiteKingExists = false
-  let blackKingExists = false
-  
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      if (board.value[row][col] !== null && 
-          board.value[row][col].type === 'king') {
-        if (board.value[row][col].color === 'white') {
-          whiteKingExists = true
-        } else {
-          blackKingExists = true
-        }
-      }
+// 处理单元格点击
+const handleCellClick = async (rowIndex, colIndex) => {
+  // 如果已经选择了棋子
+  if (gameStore.selectedPiece) {
+    // 如果点击的是同一个棋子，取消选择
+    if (gameStore.selectedPiece.x === rowIndex && gameStore.selectedPiece.y === colIndex) {
+      gameStore.deselectPiece()
+    } else {
+      // 尝试移动棋子
+      await gameStore.makeMove(gameStore.selectedPiece, { x: rowIndex, y: colIndex })
+      gameStore.deselectPiece()
+    }
+  } else {
+    // 如果没有选择棋子，尝试选择当前点击的棋子
+    const piece = gameStore.board[rowIndex][colIndex]
+    if (piece !== null && piece.color === gameStore.currentPlayer) {
+      gameStore.selectPiece({ x: rowIndex, y: colIndex })
     }
   }
+}
+
+// 检查是否是合法移动
+const isValidMove = (rowIndex, colIndex) => {
+  if (!gameStore.selectedPiece || gameStore.validMoves.length === 0) {
+    return false
+  }
   
-  if (!whiteKingExists) {
-    gameStatus.value = '黑方获胜'
-  } else if (!blackKingExists) {
-    gameStatus.value = '白方获胜'
+  return gameStore.validMoves.some(move => move.to.x === rowIndex && move.to.y === colIndex)
+}
+
+// 获取游戏状态文本
+const getGameStatusText = () => {
+  switch (gameStore.gameStatus) {
+    case 'playing': return '游戏进行中'
+    case 'check': return '将军'
+    case 'checkmate': return '将死'
+    case 'stalemate': return '和棋'
+    default: return '游戏进行中'
   }
 }
 
 // 重新开始游戏
-const restartGame = () => {
-  initGame()
+const restartGame = async () => {
+  await gameStore.startGame()
 }
 
 // 返回主页
