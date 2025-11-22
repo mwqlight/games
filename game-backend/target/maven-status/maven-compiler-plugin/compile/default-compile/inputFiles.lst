@@ -1,1 +1,16 @@
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/controller/WebSocketGameController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/Piece.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/Position.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/GameRoom.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/service/MoveResult.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/GameStatus.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/service/GameService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/service/MoveValidator.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/Move.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/Board.java
 /usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/Player.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/PlayerColor.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/controller/GameController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/service/AIService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/config/WebSocketConfig.java

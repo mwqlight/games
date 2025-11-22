@@ -24,22 +24,28 @@
       </div>
       <div class="game-board">
         <div 
-          class="board-cell" 
+          class="board-row" 
           v-for="(row, rowIndex) in board" 
           :key="rowIndex"
-          :class="{
-            'white': (rowIndex + colIndex) % 2 === 0,
-            'black': (rowIndex + colIndex) % 2 === 1,
-            'selected': selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex,
-            'valid-move': cell.validMove
-          }"
-          @click="makeMove(rowIndex, colIndex)"
         >
-          <div v-if="cell.value !== 0">
-            <span>{{ getPieceSymbol(cell.value) }}</span>
-          </div>
-          <div v-else-if="cell.validMove">
-            <span>✓</span>
+          <div 
+            class="board-cell" 
+            v-for="(cell, colIndex) in row" 
+            :key="colIndex"
+            :class="{
+              'white': (rowIndex + colIndex) % 2 === 0,
+              'black': (rowIndex + colIndex) % 2 === 1,
+              'selected': selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex,
+              'valid-move': cell.validMove
+            }"
+            @click="makeMove(rowIndex, colIndex)"
+          >
+            <div v-if="cell.value !== 0">
+              <span>{{ getPieceSymbol(cell.value) }}</span>
+            </div>
+            <div v-else-if="cell.validMove">
+              <span>✓</span>
+            </div>
           </div>
         </div>
       </div>
