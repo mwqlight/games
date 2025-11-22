@@ -102,6 +102,14 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '抽乌龟', 
+    description: '经典的扑克牌游戏，找出隐藏的乌龟牌', 
+    icon: Trophy, 
+    iconColor: '#FFA500', 
+    path: '/card-game' 
   }
 ])
 

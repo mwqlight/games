@@ -21,6 +21,4 @@ spring:
       dashscope:
         api-key: ${DASHSCOPE_API_KEY:}
 server:
-  port: 8080
-  servlet:
-    context-path: /api
+  port: 8081
