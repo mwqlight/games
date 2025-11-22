@@ -34,7 +34,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Grid, Trophy, Medal, Star } from '@element-plus/icons-vue'
+import { Grid, Trophy, Medal, Star, CirclePlus, Document, Flag, Baseball } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -102,6 +102,46 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '四子棋', 
+    description: '经典的四子连珠游戏，支持双人对战', 
+    icon: CirclePlus, 
+    iconColor: '#FFA500', 
+    path: '/connect-four' 
+  },
+  { 
+    id: 10, 
+    name: '数独', 
+    description: '逻辑推理游戏，挑战你的思维能力', 
+    icon: Document, 
+    iconColor: '#4682B4', 
+    path: '/sudoku' 
+  },
+  { 
+    id: 11, 
+    name: '拼字游戏', 
+    description: '词汇游戏，拼出单词获得分数', 
+    icon: Flag, 
+    iconColor: '#32CD32', 
+    path: '/scrabble' 
+  },
+  { 
+    id: 12, 
+    name: '大富翁', 
+    description: '经典的模拟经营游戏，成为亿万富翁', 
+    icon: Baseball, 
+    iconColor: '#FF69B4', 
+    path: '/monopoly' 
+  },
+  { 
+    id: 13, 
+    name: 'Risk', 
+    description: '策略战争游戏，征服世界', 
+    icon: Trophy, 
+    iconColor: '#8B0000', 
+    path: '/risk' 
   }
 ])
 
