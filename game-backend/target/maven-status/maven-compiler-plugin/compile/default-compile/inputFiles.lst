@@ -1,1 +1,6 @@
 /usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/config/WebMvcConfig.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/controller/GameController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/GameStatus.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/service/GameService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/model/Card.java

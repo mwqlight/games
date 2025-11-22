@@ -1,1 +1,5 @@
+com/lgames/gamebackend/model/Card$CardType.class
+com/lgames/gamebackend/config/WebMvcConfig.class
 com/lgames/gamebackend/GameBackendApplication.class
+com/lgames/gamebackend/service/GameService$1.class
+com/lgames/gamebackend/model/Card.class
