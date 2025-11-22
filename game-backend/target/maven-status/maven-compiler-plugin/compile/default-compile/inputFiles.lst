@@ -1,1 +1,8 @@
-/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/model/ChessPiece.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/model/GameState.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/service/ChessRuleService.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/model/Move.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/controller/ChessGameController.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/service/ChessGameService.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/service/ChessAIService.java

@@ -30,10 +30,10 @@
           :class="{
             'white': (rowIndex + colIndex) % 2 === 0,
             'black': (rowIndex + colIndex) % 2 === 1,
-            'selected': selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex,
+            'selected': selectedPiece && selectedPiece.row === rowIndex && selectedPiece.col === colIndex,
             'valid-move': cell.validMove
           }"
-          @click="makeMove(rowIndex, colIndex)"
+          @click="handleCellClick(rowIndex, colIndex)"
         >
           <div v-if="cell.value !== 0">
             <span>{{ getPieceSymbol(cell.value) }}</span>
@@ -58,19 +58,21 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { startGame, getGameState, makeMove } from '../services/gameApi'
 
 const router = useRouter()
 
 // 初始化游戏状态
 const board = ref([])
-const selectedCell = ref(null)
+const selectedPiece = ref(null)
 const gameStatus = ref('准备开始')
 const whiteCount = ref(0)
 const blackCount = ref(0)
-const currentPlayer = ref(1)
+const currentPlayer = ref('red')
 const gameStarted = ref(false)
 const gamePaused = ref(false)
 const timer = ref(null)
+const gameOver = ref(false)
 
 // 游戏配置
 const boardSize = ref(8)
@@ -89,7 +91,7 @@ const pieceTypes = {
 }
 
 // 初始化游戏
-const initGame = () => {
+const initGame = async () => {
   // 清除计时器
   if (timer.value) {
     clearInterval(timer.value)
@@ -102,69 +104,78 @@ const initGame = () => {
   gamePaused.value = false
   
   // 初始化棋子数量
-  whiteCount.value = initialWhiteCount.value
-  blackCount.value = initialBlackCount.value
+  whiteCount.value = 16
+  blackCount.value = 16
   
   // 初始化当前玩家
-  currentPlayer.value = initialPlayer.value
+  currentPlayer.value = 'red'
   
   // 初始化选中单元格
-  selectedCell.value = null
+  selectedPiece.value = null
   
   // 生成棋盘
   generateBoard()
   
-  // 设置初始棋子
-  setInitialPieces()
-  
-  // 检查有效移动
-  checkValidMoves()
+  // 从后端获取初始游戏状态
+  try {
+    const gameState = await getGameState()
+    updateBoard(gameState.board)
+    currentPlayer.value = gameState.currentPlayer
+    gameStatus.value = gameState.gameStatus
+  } catch (error) {
+    console.error('Failed to get game state:', error)
+  }
 }
 
 // 生成棋盘
 const generateBoard = () => {
   // 创建棋盘
-  board.value = Array(boardSize.value).fill(null).map(() => Array(boardSize.value).fill(null).map(() => ({
+  board.value = Array(10).fill(null).map(() => Array(9).fill(null).map(() => ({
     value: 0,
     validMove: false
   })))
 }
 
-// 设置初始棋子
-const setInitialPieces = () => {
-  // 设置白棋
-  for (let col = 0; col < boardSize.value; col++) {
-    board.value[1][col].value = pieceTypes.pawn + 10 // 白棋兵
+// 更新棋盘
+const updateBoard = (chessPieces) => {
+  // 清除棋盘
+  for (let row = 0; row < 10; row++) {
+    for (let col = 0; col < 9; col++) {
+      board.value[row][col].value = 0
+    }
   }
   
-  board.value[0][0].value = pieceTypes.rook + 10 // 白棋车
-  board.value[0][7].value = pieceTypes.rook + 10 // 白棋车
-  
-  board.value[0][1].value = pieceTypes.knight + 10 // 白棋马
-  board.value[0][6].value = pieceTypes.knight + 10 // 白棋马
-  
-  board.value[0][2].value = pieceTypes.bishop + 10 // 白棋象
-  board.value[0][5].value = pieceTypes.bishop + 10 // 白棋象
-  
-  board.value[0][3].value = pieceTypes.queen + 10 // 白棋后
-  board.value[0][4].value = pieceTypes.king + 10 // 白棋王
-  
-  // 设置黑棋
-  for (let col = 0; col < boardSize.value; col++) {
-    board.value[6][col].value = pieceTypes.pawn + 20 // 黑棋兵
-  }
-  
-  board.value[7][0].value = pieceTypes.rook + 20 // 黑棋车
-  board.value[7][7].value = pieceTypes.rook + 20 // 黑棋车
-  
-  board.value[7][1].value = pieceTypes.knight + 20 // 黑棋马
-  board.value[7][6].value = pieceTypes.knight + 20 // 黑棋马
-  
-  board.value[7][2].value = pieceTypes.bishop + 20 // 黑棋象
-  board.value[7][5].value = pieceTypes.bishop + 20 // 黑棋象
-  
-  board.value[7][3].value = pieceTypes.queen + 20 // 黑棋后
-  board.value[7][4].value = pieceTypes.king + 20 // 黑棋王
+  // 放置棋子
+  chessPieces.forEach(piece => {
+    if (!piece.captured) {
+      const row = piece.y
+      const col = piece.x
+      
+      const pieceType = piece.type.toLowerCase()
+      const color = piece.color === 'red' ? 1 : 2
+      
+      switch (pieceType) {
+        case 'pawn':
+          board.value[row][col].value = 1 + color * 10
+          break
+        case 'rook':
+          board.value[row][col].value = 2 + color * 10
+          break
+        case 'knight':
+          board.value[row][col].value = 3 + color * 10
+          break
+        case 'bishop':
+          board.value[row][col].value = 4 + color * 10
+          break
+        case 'queen':
+          board.value[row][col].value = 5 + color * 10
+          break
+        case 'king':
+          board.value[row][col].value = 6 + color * 10
+          break
+      }
+    }
+  })
 }
 
 // 获取棋子符号
@@ -193,19 +204,9 @@ const getPieceSymbol = (value) => {
 // 检查有效移动
 const checkValidMoves = () => {
   // 清除所有有效移动标记
-  for (let row = 0; row < boardSize.value; row++) {
-    for (let col = 0; col < boardSize.value; col++) {
+  for (let row = 0; row < 10; row++) {
+    for (let col = 0; col < 9; col++) {
       board.value[row][col].validMove = false
-    }
-  }
-  
-  // 检查所有棋子
-  for (let row = 0; row < boardSize.value; row++) {
-    for (let col = 0; col < boardSize.value; col++) {
-      if (isCurrentPlayerPiece(board.value[row][col].value)) {
-        // 检查是否有可以移动的位置
-        checkPieceValidMoves(row, col)
-      }
     }
   }
 }
@@ -218,220 +219,67 @@ const isCurrentPlayerPiece = (value) => {
   
   const color = Math.floor(value / 10)
   
-  return color === currentPlayer.value
+  return (color === 1 && currentPlayer.value === 'red') || (color === 2 && currentPlayer.value === 'black')
 }
 
-// 检查棋子的有效移动
-const checkPieceValidMoves = (rowIndex, colIndex) => {
-  // 获取棋子类型
-  const pieceType = board.value[rowIndex][colIndex].value % 10
+// 下棋
+const makeMove = async (fromX, fromY, toX, toY) => {
+  if (!gameStarted.value || gamePaused.value) { return }
   
-  // 根据棋子类型检查有效移动
-  switch (pieceType) {
-    case pieceTypes.pawn:
-      checkPawnValidMoves(rowIndex, colIndex)
-      break
-    case pieceTypes.rook:
-      checkRookValidMoves(rowIndex, colIndex)
-      break
-    case pieceTypes.knight:
-      checkKnightValidMoves(rowIndex, colIndex)
-      break
-    case pieceTypes.bishop:
-      checkBishopValidMoves(rowIndex, colIndex)
-      break
-    case pieceTypes.queen:
-      checkQueenValidMoves(rowIndex, colIndex)
-      break
-    case pieceTypes.king:
-      checkKingValidMoves(rowIndex, colIndex)
-      break
-  }
-}
-
-// 检查兵的有效移动
-const checkPawnValidMoves = (rowIndex, colIndex) => {
-  // 获取棋子颜色
-  const color = Math.floor(board.value[rowIndex][colIndex].value / 10)
-  
-  // 计算移动方向
-  const direction = color === 1 ? 1 : -1
-  
-  // 检查前方单元格
-  let newRow = rowIndex + direction
-  let newCol = colIndex
-  
-  if (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-    if (board.value[newRow][newCol].value === 0) {
-      // 设置有效移动标记
-      board.value[newRow][newCol].validMove = true
-      
-      // 检查是否是初始位置，可以移动两步
-      if ((color === 1 && rowIndex === 1) || (color === 2 && rowIndex === 6)) {
-        newRow = rowIndex + direction * 2
-        
-        if (board.value[newRow][newCol].value === 0) {
-          // 设置有效移动标记
-          board.value[newRow][newCol].validMove = true
-        }
-      }
-    }
-  }
-  
-  // 检查斜前方单元格（吃子）
-  newRow = rowIndex + direction
-  newCol = colIndex - 1
-  
-  if (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-    if (isOpponentPiece(board.value[newRow][newCol].value)) {
-      // 设置有效移动标记
-      board.value[newRow][newCol].validMove = true
-    }
-  }
-  
-  newRow = rowIndex + direction
-  newCol = colIndex + 1
-  
-  if (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-    if (isOpponentPiece(board.value[newRow][newCol].value)) {
-      // 设置有效移动标记
-      board.value[newRow][newCol].validMove = true
-    }
-  }
-}
-
-// 检查车的有效移动
-const checkRookValidMoves = (rowIndex, colIndex) => {
-  // 检查四个方向
-  const directions = [
-    { row: -1, col: 0 }, // 上
-    { row: 1, col: 0 },  // 下
-    { row: 0, col: -1 }, // 左
-    { row: 0, col: 1 }   // 右
-  ]
-  
-  for (let i = 0; i < directions.length; i++) {
-    // 检查每个方向的单元格
-    let newRow = rowIndex + directions[i].row
-    let newCol = colIndex + directions[i].col
+  try {
+    const gameState = await makeMove({ fromX, fromY, toX, toY })
+    updateBoard(gameState.board)
+    currentPlayer.value = gameState.currentPlayer
+    gameStatus.value = gameState.gameStatus
     
-    while (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-      if (board.value[newRow][newCol].value === 0) {
-        // 设置有效移动标记
-        board.value[newRow][newCol].validMove = true
-      } else if (isOpponentPiece(board.value[newRow][newCol].value)) {
-        // 设置有效移动标记
-        board.value[newRow][newCol].validMove = true
-        break
-      } else {
-        // 遇到自己的棋子，停止检查
-        break
-      }
-      
-      newRow += directions[i].row
-      newCol += directions[i].col
+    if (gameState.gameStatus === 'RED_WIN' || gameState.gameStatus === 'BLACK_WIN') {
+      gameStarted.value = false
+      gameOver.value = true
+      clearInterval(timer.value)
     }
+  } catch (error) {
+    console.error('Failed to make move:', error)
   }
 }
 
-// 检查马的有效移动
-const checkKnightValidMoves = (rowIndex, colIndex) => {
-  // 检查八个方向
-  const directions = [
-    { row: -2, col: -1 },
-    { row: -2, col: 1 },
-    { row: -1, col: -2 },
-    { row: -1, col: 2 },
-    { row: 1, col: -2 },
-    { row: 1, col: 2 },
-    { row: 2, col: -1 },
-    { row: 2, col: 1 }
-  ]
+// 处理单元格点击
+const handleCellClick = (row, col) => {
+  if (gameOver.value) return
   
-  for (let i = 0; i < directions.length; i++) {
-    // 计算新位置
-    let newRow = rowIndex + directions[i].row
-    let newCol = colIndex + directions[i].col
-    
-    if (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-      if (board.value[newRow][newCol].value === 0 || isOpponentPiece(board.value[newRow][newCol].value)) {
-        // 设置有效移动标记
-        board.value[newRow][newCol].validMove = true
-      }
-    }
+  // 如果点击的是当前玩家的棋子，显示其有效移动
+  if (isCurrentPlayerPiece(board.value[row][col].value)) {
+    selectedPiece.value = { row, col }
+    checkValidMoves()
+  } 
+  // 如果点击的是有效移动位置，移动棋子
+  else if (board.value[row][col].validMove && selectedPiece.value) {
+    const fromX = selectedPiece.value.col
+    const fromY = selectedPiece.value.row
+    const toX = col
+    const toY = row
+    makeMove(fromX, fromY, toX, toY)
+    selectedPiece.value = null
+  }
+  // 否则取消选择
+  else {
+    selectedPiece.value = null
+    checkValidMoves()
   }
 }
 
-// 检查象的有效移动
-const checkBishopValidMoves = (rowIndex, colIndex) => {
-  // 检查四个方向
-  const directions = [
-    { row: -1, col: -1 }, // 左上
-    { row: -1, col: 1 },  // 右上
-    { row: 1, col: -1 },  // 左下
-    { row: 1, col: 1 }    // 右下
-  ]
-  
-  for (let i = 0; i < directions.length; i++) {
-    // 检查每个方向的单元格
-    let newRow = rowIndex + directions[i].row
-    let newCol = colIndex + directions[i].col
-    
-    while (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-      if (board.value[newRow][newCol].value === 0) {
-        // 设置有效移动标记
-        board.value[newRow][newCol].validMove = true
-      } else if (isOpponentPiece(board.value[newRow][newCol].value)) {
-        // 设置有效移动标记
-        board.value[newRow][newCol].validMove = true
-        break
-      } else {
-        // 遇到自己的棋子，停止检查
-        break
-      }
-      
-      newRow += directions[i].row
-      newCol += directions[i].col
-    }
-  }
-}
 
-// 检查后的有效移动
-const checkQueenValidMoves = (rowIndex, colIndex) => {
-  // 检查车的有效移动
-  checkRookValidMoves(rowIndex, colIndex)
-  
-  // 检查象的有效移动
-  checkBishopValidMoves(rowIndex, colIndex)
-}
 
-// 检查王的有效移动
-const checkKingValidMoves = (rowIndex, colIndex) => {
-  // 检查八个方向
-  const directions = [
-    { row: -1, col: -1 }, // 左上
-    { row: -1, col: 0 },  // 上
-    { row: -1, col: 1 },  // 右上
-    { row: 0, col: -1 },  // 左
-    { row: 0, col: 1 },   // 右
-    { row: 1, col: -1 },  // 左下
-    { row: 1, col: 0 },   // 下
-    { row: 1, col: 1 }    // 右下
-  ]
-  
-  for (let i = 0; i < directions.length; i++) {
-    // 计算新位置
-    let newRow = rowIndex + directions[i].row
-    let newCol = colIndex + directions[i].col
-    
-    if (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
-      if (board.value[newRow][newCol].value === 0 || isOpponentPiece(board.value[newRow][newCol].value)) {
-        // 设置有效移动标记
-        board.value[newRow][newCol].validMove = true
-      }
-    }
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
 
 // 检查是否是对方的棋子
 const isOpponentPiece = (value) => {
@@ -441,116 +289,33 @@ const isOpponentPiece = (value) => {
   
   const color = Math.floor(value / 10)
   
-  return color !== currentPlayer.value
+  return (color === 1 && currentPlayer.value === 'black') || (color === 2 && currentPlayer.value === 'red')
 }
 
-// 下棋
-const makeMove = (rowIndex, colIndex) => {
-  if (!gameStarted.value || gamePaused.value) {
-    return
-  }
-  
-  // 检查是否已经选中棋子
-  if (selectedCell.value) {
-    // 检查是否是有效移动
-    if (board.value[rowIndex][colIndex].validMove) {
-      // 移动棋子
-      movePiece(selectedCell.value.row, selectedCell.value.col, rowIndex, colIndex)
-      
-      // 清除选中状态
-      selectedCell.value = null
-      
-      // 检查有效移动
-      checkValidMoves()
-      
-      // 检查游戏是否结束
-      checkGameEnd()
-    } else {
-      // 检查是否是当前玩家的棋子
-      if (isCurrentPlayerPiece(board.value[rowIndex][colIndex].value)) {
-        // 选中新的棋子
-        selectedCell.value = { row: rowIndex, col: colIndex }
-      } else {
-        // 清除选中状态
-        selectedCell.value = null
-      }
-    }
-  } else {
-    // 检查是否是当前玩家的棋子
-    if (isCurrentPlayerPiece(board.value[rowIndex][colIndex].value)) {
-      // 选中棋子
-      selectedCell.value = { row: rowIndex, col: colIndex }
-    }
-  }
-}
 
-// 移动棋子
-const movePiece = (fromRow, fromCol, toRow, toCol) => {
-  // 获取棋子类型
-  const pieceType = board.value[fromRow][fromCol].value
-  
-  // 检查是否吃掉对方棋子
-  if (isOpponentPiece(board.value[toRow][toCol].value)) {
-    // 更新棋子数量
-    if (currentPlayer.value === 1) {
-      blackCount.value--
-    } else {
-      whiteCount.value--
-    }
-  }
-  
-  // 移动棋子
-  board.value[toRow][toCol].value = pieceType
-  board.value[fromRow][fromCol].value = 0
-  
-  // 切换玩家
-  currentPlayer.value = currentPlayer.value === 1 ? 2 : 1
-}
 
-// 检查游戏结束
-const checkGameEnd = () => {
-  // 检查是否有有效移动
-  let hasValidMove = false
-  
-  for (let row = 0; row < boardSize.value; row++) {
-    for (let col = 0; col < boardSize.value; col++) {
-      if (board.value[row][col].validMove) {
-        hasValidMove = true
-        break
-      }
-    }
-    
-    if (hasValidMove) {
-      break
-    }
-  }
-  
-  if (!hasValidMove) {
-    // 游戏结束
-    gameStatus.value = '游戏结束'
-    clearInterval(timer.value)
-    
-    // 计算得分
-    if (whiteCount.value > blackCount.value) {
-      score.value = whiteCount.value - blackCount.value
-    } else if (blackCount.value > whiteCount.value) {
-      score.value = blackCount.value - whiteCount.value
-    } else {
-      score.value = 0
-    }
-  }
-}
+
+
+
 
 // 开始游戏
-const startGame = () => {
+const startGame = async () => {
   if (!gameStarted.value) {
-    gameStatus.value = '游戏进行中'
-    gameStarted.value = true
-    
-    // 开始计时器
-    timer.value = setInterval(() => {
-      time.value++
-    }, 1000)
+    try {
+      const gameState = await startGame()
+      updateBoard(gameState.board)
+      currentPlayer.value = gameState.currentPlayer
+      gameStatus.value = gameState.gameStatus
+      gameStarted.value = true
+      gameOver.value = false
+      
+      // 开始计时器
+      timer.value = setInterval(() => {
+        time.value++
+      }, 1000)
+    } catch (error) {
+      console.error('Failed to start game:', error)
+    }
   }
 }
 
@@ -582,8 +347,29 @@ const stopGame = () => {
 }
 
 // 重新开始游戏
-const restartGame = () => {
-  initGame()
+const restartGame = async () => {
+  if (gameStarted.value) {
+    stopGame()
+  }
+  
+  try {
+    const gameState = await startGame()
+    updateBoard(gameState.board)
+    currentPlayer.value = gameState.currentPlayer
+    gameStatus.value = gameState.gameStatus
+    gameStarted.value = true
+    gamePaused.value = false
+    gameOver.value = false
+    
+    // 重置计时器
+    whiteTime.value = initialTime.value
+    blackTime.value = initialTime.value
+    
+    // 开始计时
+    startTimer()
+  } catch (error) {
+    console.error('Failed to restart game:', error)
+  }
 }
 
 // 返回主页
@@ -592,8 +378,8 @@ const goBack = () => {
 }
 
 // 组件挂载时初始化游戏
-onMounted(() => {
-  initGame()
+onMounted(async () => {
+  await initGame()
 })
 
 // 组件卸载时清除计时器
@@ -669,10 +455,10 @@ onUnmounted(() => {
 
 .game-board {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(8, 1fr);
-  width: 400px;
-  height: 400px;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  width: 450px;
+  height: 500px;
   border: 2px solid white;
   border-radius: 8px;
   overflow: hidden;
