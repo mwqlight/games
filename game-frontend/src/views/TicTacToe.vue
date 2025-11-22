@@ -3,7 +3,7 @@
     <el-card class="game-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon class="game-icon"><Game /></el-icon>
+          <el-icon class="game-icon"><Star /></el-icon>
           <span class="game-title">井字棋游戏</span>
           <el-button 
             type="primary" 
@@ -57,7 +57,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Game, ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Star } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()

@@ -39,45 +39,69 @@ import { Grid, Trophy, Medal, Star } from '@element-plus/icons-vue'
 const router = useRouter()
 
 const games = ref([
-  {
-    id: 1,
-    name: '井字棋',
-    description: '经典的井字棋游戏，支持双人对战和AI对战',
-    icon: Grid,
-    iconColor: '#E6A23C',
-    path: '/tic-tac-toe'
+  { 
+    id: 1, 
+    name: '井字棋', 
+    description: '经典的井字棋游戏，支持双人对战和AI对战', 
+    icon: Grid, 
+    iconColor: '#E6A23C', 
+    path: '/tic-tac-toe' 
   },
-  {
-    id: 2,
-    name: '五子棋',
-    description: '规则极简，策略性强，易学难精',
-    icon: Star,
-    iconColor: '#409EFF',
-    path: '/gobang'
+  { 
+    id: 2, 
+    name: '五子棋', 
+    description: '规则极简，策略性强，易学难精', 
+    icon: Star, 
+    iconColor: '#409EFF', 
+    path: '/gobang' 
   },
-  {
-    id: 3,
-    name: '象棋',
-    description: '博大精深，锻炼思维，是经典的策略博弈',
-    icon: Trophy,
-    iconColor: '#67C23A',
-    path: '/chess'
+  { 
+    id: 3, 
+    name: '象棋', 
+    description: '博大精深，锻炼思维，是经典的策略博弈', 
+    icon: Trophy, 
+    iconColor: '#67C23A', 
+    path: '/chess' 
   },
-  {
-    id: 4,
-    name: '跳棋',
-    description: '节奏明快，适合2-6人同乐',
-    icon: Medal,
-    iconColor: '#F56C6C',
-    path: '/checkers'
+  { 
+    id: 4, 
+    name: '跳棋', 
+    description: '节奏明快，适合2-6人同乐', 
+    icon: Medal, 
+    iconColor: '#F56C6C', 
+    path: '/checkers' 
   },
-  {
-    id: 5,
-    name: '国际象棋',
-    description: '全球流行，战术层次丰富',
-    icon: Star,
-    iconColor: '#909399',
-    path: '/international-chess'
+  { 
+    id: 5, 
+    name: '国际象棋', 
+    description: '全球流行，战术层次丰富', 
+    icon: Star, 
+    iconColor: '#909399', 
+    path: '/international-chess' 
+  },
+  { 
+    id: 6, 
+    name: '扑克', 
+    description: '经典的扑克牌游戏，支持多种玩法', 
+    icon: Star, 
+    iconColor: '#D6A2E8', 
+    path: '/poker' 
+  },
+  { 
+    id: 7, 
+    name: '二十一点', 
+    description: '经典的赌场游戏，目标是接近21点', 
+    icon: Trophy, 
+    iconColor: '#FFD700', 
+    path: '/blackjack' 
+  },
+  { 
+    id: 8, 
+    name: '双陆棋', 
+    description: '古老的策略游戏，需要技巧和运气', 
+    icon: Star, 
+    iconColor: '#9370DB', 
+    path: '/backgammon' 
   }
 ])
 
