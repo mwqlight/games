@@ -102,6 +102,14 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '十点半', 
+    description: '经典的扑克牌游戏，目标是接近10.30点', 
+    icon: Trophy, 
+    iconColor: '#FFA500', 
+    path: '/ten-point-half' 
   }
 ])
 
