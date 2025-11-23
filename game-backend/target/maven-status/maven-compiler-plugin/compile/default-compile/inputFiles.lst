@@ -1,1 +1,8 @@
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/model/CellRequest.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/enums/Difficulty.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/enums/GameStatus.java
 /usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/model/GameState.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/controller/MinesweeperController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/model/Cell.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/service/MinesweeperService.java

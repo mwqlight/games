@@ -34,7 +34,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Grid, Trophy, Medal, Star } from '@element-plus/icons-vue'
+import { Grid, Trophy, Medal, Star, Warning } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -102,6 +102,14 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '扫雷', 
+    description: '经典的扫雷游戏，挑战你的逻辑和运气', 
+    icon: Warning, 
+    iconColor: '#F56C6C', 
+    path: '/minesweeper' 
   }
 ])
 
