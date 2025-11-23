@@ -1,1 +1,5 @@
-/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/connectfour/ConnectFourController.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/connectfour/MoveRequest.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/connectfour/GameState.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/connectfour/ConnectFourService.java

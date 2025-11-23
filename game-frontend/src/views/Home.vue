@@ -102,6 +102,14 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '四子棋', 
+    description: '经典的四子连珠游戏，支持玩家与AI对战', 
+    icon: Grid, 
+    iconColor: '#E6A23C', 
+    path: '/connect-four' 
   }
 ])
 

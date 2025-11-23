@@ -17,7 +17,8 @@ const routes = [
   { path: '/puzzle', name: 'Puzzle', component: () => import('../views/Puzzle.vue') },
   { path: '/poker', name: 'Poker', component: () => import('../views/Poker.vue') },
   { path: '/blackjack', name: 'Blackjack', component: () => import('../views/Blackjack.vue') },
-  { path: '/backgammon', name: 'Backgammon', component: () => import('../views/Backgammon.vue') }
+  { path: '/backgammon', name: 'Backgammon', component: () => import('../views/Backgammon.vue') },
+  { path: '/connect-four', name: 'ConnectFour', component: () => import('../views/ConnectFour.vue') }
   // 其他游戏路由可以在这里添加
 ]
 
