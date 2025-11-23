@@ -1,1 +1,5 @@
-/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/tetris/controller/TetrisGameController.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/tetris/service/TetrisGameService.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/tetris/model/Tetromino.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/tetris/model/GameState.java

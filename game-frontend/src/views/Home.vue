@@ -102,6 +102,14 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '俄罗斯方块', 
+    description: '经典的俄罗斯方块游戏，挑战你的反应速度和策略', 
+    icon: Trophy, 
+    iconColor: '#FF6B6B', 
+    path: '/tetris' 
   }
 ])
 

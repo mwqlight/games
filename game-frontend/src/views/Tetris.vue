@@ -78,7 +78,13 @@
         <el-button type="danger" @click="stopGame" :disabled="!gameStarted">停止游戏</el-button>
       </div>
       <div class="game-instructions">
-        <p>使用方向键控制方块移动，空格键旋转</p>
+        <h3>游戏控制说明</h3>
+        <ul>
+          <li>← 左箭头：移动方块向左</li>
+          <li>→ 右箭头：移动方块向右</li>
+          <li>↓ 下箭头：加速方块下落</li>
+          <li>空格键：旋转方块</li>
+        </ul>
       </div>
     </main>
   </div>
@@ -181,19 +187,26 @@ const handleKeyDown = (event) => {
     return
   }
   
+  // 阻止默认事件，避免页面滚动
+  event.preventDefault()
+  
   // 处理方向键
   switch (event.key) {
     case 'ArrowLeft':
       movePiece(-1)
+      console.log('左移方块')
       break
     case 'ArrowRight':
       movePiece(1)
+      console.log('右移方块')
       break
     case 'ArrowDown':
       movePieceDown()
+      console.log('加速下落')
       break
     case ' ': 
       rotatePiece()
+      console.log('旋转方块')
       break
   }
 }
@@ -402,6 +415,9 @@ const startGame = () => {
   drawPiece(currentPiece.value)
   
   // 开始游戏循环
+  if (gameLoop.value) {
+    clearInterval(gameLoop.value)
+  }
   gameLoop.value = setInterval(updateGame, speed.value)
 }
 
@@ -432,7 +448,9 @@ const stopGame = () => {
 
 // 更新游戏
 const updateGame = () => {
-  movePieceDown()
+  if (gameStarted.value && !gamePaused.value) {
+    movePieceDown()
+  }
 }
 
 // 重新开始游戏
@@ -652,5 +670,11 @@ onUnmounted(() => {
 
 .game-instructions {
   font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
 }
 </style>
