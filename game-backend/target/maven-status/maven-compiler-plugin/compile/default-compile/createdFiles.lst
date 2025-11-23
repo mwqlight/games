@@ -1,1 +1,6 @@
+com/lgames/gamebackend/connectfour/ConnectFourService.class
+com/lgames/gamebackend/connectfour/GameState$GameStatus.class
+com/lgames/gamebackend/connectfour/GameState.class
+com/lgames/gamebackend/connectfour/ConnectFourController.class
+com/lgames/gamebackend/connectfour/MoveRequest.class
 com/lgames/gamebackend/GameBackendApplication.class
