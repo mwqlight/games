@@ -1,1 +1,4 @@
-/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/gobang/GameState.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/gobang/GobangController.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/gobang/GobangService.java
