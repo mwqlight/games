@@ -51,10 +51,6 @@
         <!-- 游戏控制 -->
         <div class="game-controls">
           <el-button type="primary" @click="resetGame">重新开始</el-button>
-          <el-button @click="toggleAIMode">
-            {{ aiMode ? '关闭AI' : '开启AI' }}
-          </el-button>
-          <el-button @click="undoMove" :disabled="history.length === 0">悔棋</el-button>
         </div>
       </div>
     </el-card>
@@ -66,6 +62,13 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Star } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+
+// 配置axios
+const apiClient = axios.create({
+  baseURL: 'http://localhost:8081/api/gobang',
+  timeout: 10000,
+})
 
 const router = useRouter()
 
@@ -76,8 +79,7 @@ const currentPlayer = ref('black')
 const gameStatus = ref('游戏进行中')
 const gameStatusClass = ref('status-playing')
 const winningCells = ref([])
-const aiMode = ref(false)
-const history = ref([])
+const isAIMoving = ref(false)
 
 // 初始化棋盘
 const initBoard = () => {
@@ -88,143 +90,145 @@ const initBoard = () => {
   board.value = newBoard
 }
 
-// 检查游戏是否结束
-const checkGameEnd = (row, col) => {
-  const directions = [
-    [0, 1], [1, 0], [1, 1], [1, -1] // 横向、纵向、主对角线、副对角线
-  ]
-
-  for (const [dx, dy] of directions) {
-    let count = 1 // 当前棋子
-    let winningPath = [`${row}-${col}`]
-
-    // 向正方向检查
-    for (let i = 1; i < 5; i++) {
-      const newRow = row + dx * i
-      const newCol = col + dy * i
-      if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board.value[newRow][newCol] === currentPlayer.value) {
-        count++
-        winningPath.push(`${newRow}-${newCol}`)
-      } else {
-        break
-      }
-    }
-
-    // 向负方向检查
-    for (let i = 1; i < 5; i++) {
-      const newRow = row - dx * i
-      const newCol = col - dy * i
-      if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board.value[newRow][newCol] === currentPlayer.value) {
-        count++
-        winningPath.unshift(`${newRow}-${newCol}`)
-      } else {
-        break
-      }
-    }
-
-    // 检查是否获胜
-    if (count >= 5) {
-      winningCells.value = winningPath
-      gameStatus.value = `${currentPlayer.value === 'black' ? '黑棋' : '白棋'} 获胜！`
-      gameStatusClass.value = 'status-winning'
-      ElMessage.success(`${currentPlayer.value === 'black' ? '黑棋' : '白棋'} 获胜！`)
-      return true
-    }
-  }
-
-  // 检查是否平局
-  if (board.value.every(row => row.every(cell => cell !== ''))) {
-    gameStatus.value = '平局！'
-    gameStatusClass.value = 'status-draw'
-    ElMessage.info('平局！')
-    return true
-  }
-
-  return false
-}
-
-// 保存历史记录
-const saveHistory = () => {
-  history.value.push(JSON.parse(JSON.stringify(board.value)))
-}
-
-// 玩家移动
-const makeMove = (row, col) => {
-  if (board.value[row][col] !== '' || gameStatus.value !== '游戏进行中') {
-    return
-  }
-
-  saveHistory()
-  board.value[row][col] = currentPlayer.value
-
-  if (checkGameEnd(row, col)) {
-    return
-  }
-
-  // 切换玩家
-  currentPlayer.value = currentPlayer.value === 'black' ? 'white' : 'black'
-
-  // AI移动
-  if (aiMode.value && currentPlayer.value === 'white') {
-    setTimeout(aiMove, 500)
-  }
-}
-
-// AI移动
-const aiMove = () => {
-  // 简单的AI策略：随机选择空单元格
-  const emptyCells = []
+// 从后端更新棋盘状态
+const updateBoardFromBackend = (backendBoard) => {
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j < boardSize; j++) {
-      if (board.value[i][j] === '') {
-        emptyCells.push([i, j])
+      switch (backendBoard[i][j]) {
+        case 1:
+          board.value[i][j] = 'black'
+          break
+        case 2:
+          board.value[i][j] = 'white'
+          break
+        default:
+          board.value[i][j] = ''
       }
     }
   }
-
-  if (emptyCells.length === 0) return
-
-  const randomIndex = Math.floor(Math.random() * emptyCells.length)
-  const [row, col] = emptyCells[randomIndex]
-  
-  saveHistory()
-  board.value[row][col] = 'white'
-
-  checkGameEnd(row, col)
-  currentPlayer.value = 'black'
 }
 
-// 重置游戏
-const resetGame = () => {
-  initBoard()
-  currentPlayer.value = 'black'
-  gameStatus.value = '游戏进行中'
-  gameStatusClass.value = 'status-playing'
-  winningCells.value = []
-  history.value = []
+// 更新游戏状态
+const updateGameStatus = (status) => {
+  switch (status) {
+    case 'playing':
+      gameStatus.value = '游戏进行中'
+      gameStatusClass.value = 'status-playing'
+      break
+    case 'player_win':
+      gameStatus.value = '黑棋获胜！'
+      gameStatusClass.value = 'status-winning'
+      ElMessage.success('黑棋获胜！')
+      break
+    case 'ai_win':
+      gameStatus.value = '白棋获胜！'
+      gameStatusClass.value = 'status-winning'
+      ElMessage.success('白棋获胜！')
+      break
+    case 'draw':
+      gameStatus.value = '平局！'
+      gameStatusClass.value = 'status-draw'
+      ElMessage.info('平局！')
+      break
+  }
 }
 
-// 切换AI模式
-const toggleAIMode = () => {
-  aiMode.value = !aiMode.value
-  resetGame()
-  ElMessage.info(aiMode.value ? 'AI模式已开启' : 'AI模式已关闭')
+// 更新当前玩家
+const updateCurrentPlayer = (player) => {
+  currentPlayer.value = player === 1 ? 'black' : 'white'
 }
 
-// 悔棋
-const undoMove = () => {
-  if (history.value.length === 0) {
-    ElMessage.warning('没有可悔的棋步')
+// 高亮获胜的棋子
+const highlightWinningCells = (winningLine) => {
+  if (winningLine) {
+    const [row, col, dirX, dirY] = winningLine
+    winningCells.value = []
+    
+    // 添加当前棋子
+    winningCells.value.push(`${row}-${col}`)
+    
+    // 向正方向添加
+    let r = row + dirX
+    let c = col + dirY
+    while (r >= 0 && r < boardSize && c >= 0 && c < boardSize && board.value[r][c] === currentPlayer.value) {
+      winningCells.value.push(`${r}-${c}`)
+      r += dirX
+      c += dirY
+    }
+    
+    // 向负方向添加
+    r = row - dirX
+    c = col - dirY
+    while (r >= 0 && r < boardSize && c >= 0 && c < boardSize && board.value[r][c] === currentPlayer.value) {
+      winningCells.value.push(`${r}-${c}`)
+      r -= dirX
+      c -= dirY
+    }
+  }
+}
+
+
+
+
+
+// 玩家移动
+const makeMove = async (row, col) => {
+  if (board.value[row][col] !== '' || gameStatus.value !== '游戏进行中' || isAIMoving.value) {
     return
   }
 
-  board.value = history.value.pop()
-  currentPlayer.value = currentPlayer.value === 'black' ? 'white' : 'black'
-  gameStatus.value = '游戏进行中'
-  gameStatusClass.value = 'status-playing'
-  winningCells.value = []
-  ElMessage.success('悔棋成功')
+  try {
+    isAIMoving.value = true
+    const response = await apiClient.post('/move', { row, col })
+    const gameState = response.data
+    
+    // 更新棋盘
+    updateBoardFromBackend(gameState.board)
+    
+    // 更新游戏状态
+    updateGameStatus(gameState.status)
+    
+    // 更新当前玩家
+    updateCurrentPlayer(gameState.currentPlayer)
+    
+    // 高亮获胜的棋子
+    highlightWinningCells(gameState.winningLine)
+  } catch (error) {
+    ElMessage.error('落子失败，请重试')
+    console.error('落子失败:', error)
+  } finally {
+    isAIMoving.value = false
+  }
 }
+
+
+
+// 重置游戏
+const resetGame = async () => {
+  try {
+    const response = await apiClient.post('/reset')
+    const gameState = response.data
+    
+    // 更新棋盘
+    updateBoardFromBackend(gameState.board)
+    
+    // 更新游戏状态
+    updateGameStatus(gameState.status)
+    
+    // 更新当前玩家
+    updateCurrentPlayer(gameState.currentPlayer)
+    
+    // 清除获胜棋子高亮
+    winningCells.value = []
+  } catch (error) {
+    ElMessage.error('重置游戏失败，请重试')
+    console.error('重置游戏失败:', error)
+  }
+}
+
+
+
+
 
 // 返回主页
 const goBack = () => {
@@ -232,8 +236,11 @@ const goBack = () => {
 }
 
 // 页面挂载时初始化
-onMounted(() => {
+onMounted(async () => {
   initBoard()
+  
+  // 初始化游戏
+  await resetGame()
   
   // 可以从本地存储加载游戏配置
   const gameConfig = localStorage.getItem('gameConfig')
