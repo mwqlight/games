@@ -1,1 +1,10 @@
+com/lgames/gamebackend/tetris/service/TetrisGameService.class
+com/lgames/gamebackend/tetris/controller/TetrisGameController.class
+com/lgames/gamebackend/tetris/model/Tetromino.class
+com/lgames/gamebackend/tetris/model/Tetromino$1.class
+com/lgames/gamebackend/tetris/model/GameState.class
+com/lgames/gamebackend/tetris/service/TetrisGameService$1.class
+com/lgames/gamebackend/tetris/model/Tetromino$TetrominoType.class
+com/lgames/gamebackend/tetris/model/GameState$GameStatus.class
+com/lgames/gamebackend/tetris/controller/TetrisGameController$MoveRequest.class
 com/lgames/gamebackend/GameBackendApplication.class
