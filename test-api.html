@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试贪吃蛇API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试贪吃蛇API</h1>
+    
+    <div class="test-section">
+        <h2>1. 创建新游戏</h2>
+        <button onclick="testNewGame()">创建新游戏</button>
+        <div class="result" id="newGameResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 移动贪吃蛇</h2>
+        <input type="text" id="gameIdInput" placeholder="输入游戏ID">
+        <button onclick="testMove('UP')">向上移动</button>
+        <button onclick="testMove('DOWN')">向下移动</button>
+        <button onclick="testMove('LEFT')">向左移动</button>
+        <button onclick="testMove('RIGHT')">向右移动</button>
+        <div class="result" id="moveResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 暂停/继续游戏</h2>
+        <input type="text" id="gameIdInput2" placeholder="输入游戏ID">
+        <button onclick="testTogglePause()">暂停/继续</button>
+        <div class="result" id="togglePauseResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 重新开始游戏</h2>
+        <input type="text" id="gameIdInput3" placeholder="输入游戏ID">
+        <button onclick="testRestart()">重新开始</button>
+        <div class="result" id="restartResult"></div>
+    </div>
+    
+    <script>
+        let currentGameId = '';
+        
+        async function testNewGame() {
+            try {
+                const response = await fetch('http://localhost:8080/api/snake/new', { method: 'POST' });
+                const game = await response.json();
+                
+                currentGameId = game.gameId;
+                document.getElementById('gameIdInput').value = currentGameId;
+                document.getElementById('gameIdInput2').value = currentGameId;
+                document.getElementById('gameIdInput3').value = currentGameId;
+                
+                document.getElementById('newGameResult').innerHTML = `
+                    <strong>成功创建游戏</strong><br>
+                    游戏ID: ${game.gameId}<br>
+                    得分: ${game.score}<br>
+                    游戏状态: ${game.gameStatus}<br>
+                    贪吃蛇位置: ${JSON.stringify(game.snake)}<br>
+                    食物位置: ${JSON.stringify(game.food)}<br>
+                    方向: ${game.direction}<br>
+                    速度: ${game.speed}
+                `;
+            } catch (error) {
+                document.getElementById('newGameResult').innerHTML = `<strong>错误:</strong> ${error.message}`;
+            }
+        }
+        
+        async function testMove(direction) {
+            const gameId = document.getElementById('gameIdInput').value;
+            if (!gameId) {
+                document.getElementById('moveResult').innerHTML = '<strong>请先输入游戏ID</strong>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/snake/${gameId}/move`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(direction)
+                });
+                
+                if (response.ok) {
+                    const game = await response.json();
+                    document.getElementById('moveResult').innerHTML = `
+                        <strong>移动成功</strong><br>
+                        游戏ID: ${game.gameId}<br>
+                        得分: ${game.score}<br>
+                        游戏状态: ${game.gameStatus}<br>
+                        贪吃蛇位置: ${JSON.stringify(game.snake)}<br>
+                        食物位置: ${JSON.stringify(game.food)}<br>
+                        方向: ${game.direction}<br>
+                        速度: ${game.speed}
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('moveResult').innerHTML = `<strong>错误:</strong> ${errorText}`;
+                }
+            } catch (error) {
+                document.getElementById('moveResult').innerHTML = `<strong>错误:</strong> ${error.message}`;
+            }
+        }
+        
+        async function testTogglePause() {
+            const gameId = document.getElementById('gameIdInput2').value;
+            if (!gameId) {
+                document.getElementById('togglePauseResult').innerHTML = '<strong>请先输入游戏ID</strong>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/snake/${gameId}/toggle-pause`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const game = await response.json();
+                    document.getElementById('togglePauseResult').innerHTML = `
+                        <strong>暂停/继续成功</strong><br>
+                        游戏ID: ${game.gameId}<br>
+                        游戏状态: ${game.gameStatus}
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('togglePauseResult').innerHTML = `<strong>错误:</strong> ${errorText}`;
+                }
+            } catch (error) {
+                document.getElementById('togglePauseResult').innerHTML = `<strong>错误:</strong> ${error.message}`;
+            }
+        }
+        
+        async function testRestart() {
+            const gameId = document.getElementById('gameIdInput3').value;
+            if (!gameId) {
+                document.getElementById('restartResult').innerHTML = '<strong>请先输入游戏ID</strong>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/snake/${gameId}/restart`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const game = await response.json();
+                    document.getElementById('restartResult').innerHTML = `
+                        <strong>重新开始成功</strong><br>
+                        游戏ID: ${game.gameId}<br>
+                        得分: ${game.score}<br>
+                        游戏状态: ${game.gameStatus}<br>
+                        贪吃蛇位置: ${JSON.stringify(game.snake)}<br>
+                        食物位置: ${JSON.stringify(game.food)}<br>
+                        方向: ${game.direction}<br>
+                        速度: ${game.speed}
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('restartResult').innerHTML = `<strong>错误:</strong> ${errorText}`;
+                }
+            } catch (error) {
+                document.getElementById('restartResult').innerHTML = `<strong>错误:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -65,40 +65,60 @@ const direction = ref('right')
 const gameStarted = ref(false)
 const gamePaused = ref(false)
 const gameLoop = ref(null)
+const gameId = ref(null)
 
 // 游戏配置
 const boardSize = 20
-const initialSnake = [
-  { row: 10, col: 10 },
-  { row: 10, col: 9 },
-  { row: 10, col: 8 }
-]
 
 // 初始化游戏
-const initGame = () => {
+const initGame = async () => {
   // 清除游戏循环
   if (gameLoop.value) {
     clearInterval(gameLoop.value)
     gameLoop.value = null
   }
   
-  // 初始化游戏状态
-  gameStatus.value = '准备开始'
-  gameStarted.value = false
-  gamePaused.value = false
-  
-  // 初始化得分
-  score.value = 0
-  
-  // 初始化速度
-  speed.value = 150
-  
-  // 初始化贪吃蛇
-  snake.value = JSON.parse(JSON.stringify(initialSnake))
-  
-  // 初始化方向
-  direction.value = 'right'
-  
+  try {
+    // 创建新游戏
+    const response = await fetch('/api/snake/new', { method: 'POST' })
+    const game = await response.json()
+    
+    // 初始化游戏状态
+    gameStatus.value = '准备开始'
+    gameStarted.value = false
+    gamePaused.value = false
+    
+    // 初始化得分
+    score.value = game.score
+    
+    // 初始化速度
+    speed.value = 150
+    
+    // 初始化贪吃蛇
+    snake.value = game.snake.map(segment => ({ row: segment.row, col: segment.col }))
+    
+    // 初始化方向
+    direction.value = 'right'
+    
+    // 初始化食物
+    food.value = { row: game.food.row, col: game.food.col }
+    
+    // 保存游戏ID
+    gameId.value = game.gameId
+    
+    // 初始化棋盘
+    updateBoard()
+    
+    // 添加键盘事件监听
+    window.addEventListener('keydown', handleKeyDown)
+  } catch (error) {
+    console.error('初始化游戏失败:', error)
+    gameStatus.value = '连接失败'
+  }
+}
+
+// 更新棋盘
+const updateBoard = () => {
   // 初始化棋盘
   board.value = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null))
   
@@ -108,25 +128,7 @@ const initGame = () => {
   }
   
   // 放置食物
-  placeFood()
-  
-  // 添加键盘事件监听
-  window.addEventListener('keydown', handleKeyDown)
-}
-
-// 放置食物
-const placeFood = () => {
-  let row, col
-  
-  // 随机生成食物位置，确保不在贪吃蛇身上
-  do {
-    row = Math.floor(Math.random() * boardSize)
-    col = Math.floor(Math.random() * boardSize)
-  } while (board.value[row][col] === 'snake')
-  
-  // 放置食物
-  board.value[row][col] = 'food'
-  food.value = { row, col }
+  board.value[food.value.row][food.value.col] = 'food'
 }
 
 // 处理键盘事件
@@ -137,27 +139,66 @@ const handleKeyDown = (event) => {
   }
   
   // 处理方向键
+  let newDirection
   switch (event.key) {
     case 'ArrowUp':
       if (direction.value !== 'down') {
+        newDirection = 'UP'
         direction.value = 'up'
       }
       break
     case 'ArrowDown':
       if (direction.value !== 'up') {
+        newDirection = 'DOWN'
         direction.value = 'down'
       }
       break
     case 'ArrowLeft':
       if (direction.value !== 'right') {
+        newDirection = 'LEFT'
         direction.value = 'left'
       }
       break
     case 'ArrowRight':
       if (direction.value !== 'left') {
+        newDirection = 'RIGHT'
         direction.value = 'right'
       }
       break
+  }
+  
+  if (newDirection) {
+    moveSnake(newDirection)
+  }
+}
+
+// 移动贪吃蛇
+const moveSnake = async (direction) => {
+  try {
+    const response = await fetch(`/api/snake/${gameId.value}/move`, { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction })
+    })
+    const game = await response.json()
+    
+    // 更新游戏状态
+    snake.value = game.snake.map(segment => ({ row: segment.row, col: segment.col }))
+    food.value = { row: game.food.row, col: game.food.col }
+    score.value = game.score
+    gameStatus.value = game.gameStatus === 'PLAYING' ? '游戏进行中' : '游戏结束'
+    gameStarted.value = game.gameStatus === 'PLAYING'
+    
+    // 更新棋盘
+    updateBoard()
+    
+    // 检查游戏是否结束
+    if (game.gameStatus === 'GAME_OVER') {
+      stopGame()
+    }
+  } catch (error) {
+    console.error('移动失败:', error)
+    gameStatus.value = '连接失败'
   }
 }
 
@@ -167,8 +208,12 @@ const startGame = () => {
   gameStarted.value = true
   gamePaused.value = false
   
-  // 开始游戏循环
-  gameLoop.value = setInterval(updateGame, speed.value)
+  // 启动游戏循环
+  if (!gameLoop.value) {
+    gameLoop.value = setInterval(() => {
+      moveSnake(direction.value.toUpperCase())
+    }, speed.value)
+  }
 }
 
 // 暂停游戏
@@ -176,7 +221,7 @@ const pauseGame = () => {
   gameStatus.value = '游戏暂停'
   gamePaused.value = true
   
-  // 清除游戏循环
+  // 暂停游戏循环
   if (gameLoop.value) {
     clearInterval(gameLoop.value)
     gameLoop.value = null
@@ -196,70 +241,20 @@ const stopGame = () => {
   }
 }
 
-// 更新游戏
-const updateGame = () => {
-  // 获取贪吃蛇头部
-  const head = snake.value[0]
-  
-  // 计算新的头部位置
-  let newHead
-  
-  switch (direction.value) {
-    case 'up':
-      newHead = { row: head.row - 1, col: head.col }
-      break
-    case 'down':
-      newHead = { row: head.row + 1, col: head.col }
-      break
-    case 'left':
-      newHead = { row: head.row, col: head.col - 1 }
-      break
-    case 'right':
-      newHead = { row: head.row, col: head.col + 1 }
-      break
-  }
-  
-  // 检查是否撞墙
-  if (newHead.row < 0 || newHead.row >= boardSize || newHead.col < 0 || newHead.col >= boardSize) {
-    stopGame()
-    return
-  }
-  
-  // 检查是否撞到自己
-  if (board.value[newHead.row][newHead.col] === 'snake') {
-    stopGame()
-    return
-  }
-  
-  // 检查是否吃到食物
-  if (board.value[newHead.row][newHead.col] === 'food') {
-    // 增加得分
-    score.value += 10
-    
-    // 增加贪吃蛇长度
-    snake.value.unshift(newHead)
-    board.value[newHead.row][newHead.col] = 'snake'
-    
-    // 放置新的食物
-    placeFood()
-    
-    // 提高速度
-    if (speed.value > 50) {
-      speed.value -= 5
-      
-      // 重新设置游戏循环
-      clearInterval(gameLoop.value)
-      gameLoop.value = setInterval(updateGame, speed.value)
+// 放置食物
+const placeFood = () => {
+  // 生成随机位置
+  let newFood
+  do {
+    newFood = { 
+      row: Math.floor(Math.random() * boardSize), 
+      col: Math.floor(Math.random() * boardSize) 
     }
-  } else {
-    // 移动贪吃蛇
-    snake.value.unshift(newHead)
-    board.value[newHead.row][newHead.col] = 'snake'
-    
-    // 移除尾部
-    const tail = snake.value.pop()
-    board.value[tail.row][tail.col] = null
-  }
+  } while (board.value[newFood.row][newFood.col] === 'snake')
+  
+  // 更新食物位置
+  food.value = newFood
+  board.value[newFood.row][newFood.col] = 'food'
 }
 
 // 重新开始游戏

@@ -1,1 +1,14 @@
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/sudoku/model/SudokuGame.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/sudoku/model/Move.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/puzzle/service/PuzzleService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/snake/service/SnakeService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/model/MinesweeperGame.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/controller/MinesweeperController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/minesweeper/service/MinesweeperService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/sudoku/controller/SudokuController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/snake/controller/SnakeController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/sudoku/service/SudokuService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/puzzle/controller/PuzzleController.java
 /usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/snake/model/SnakeGame.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/puzzle/model/PuzzleGame.java

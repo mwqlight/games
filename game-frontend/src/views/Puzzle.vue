@@ -71,29 +71,41 @@ const boardSize = 4
 const totalCells = boardSize * boardSize
 
 // 初始化游戏
-const initGame = () => {
-  // 清除计时器
-  if (timer.value) {
-    clearInterval(timer.value)
-    timer.value = null
+const initGame = async () => {
+  try {
+    // 清除计时器
+    if (timer.value) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
+    
+    // 初始化游戏状态
+    gameStatus.value = '准备开始'
+    gameStarted.value = false
+    gamePaused.value = false
+    
+    // 初始化得分
+    score.value = 0
+    
+    // 初始化时间
+    time.value = 0
+    
+    // 初始化步数
+    moves.value = 0
+    
+    // 创建新游戏
+    const response = await fetch('http://localhost:8080/api/puzzle/new', { method: 'POST' })
+    const game = await response.json()
+    
+    // 初始化棋盘
+    board.value = game.board.flat()
+    
+    // 保存游戏ID
+    gameId.value = game.gameId
+  } catch (error) {
+    console.error('初始化游戏失败:', error)
+    gameStatus.value = '连接失败'
   }
-  
-  // 初始化游戏状态
-  gameStatus.value = '准备开始'
-  gameStarted.value = false
-  gamePaused.value = false
-  
-  // 初始化得分
-  score.value = 0
-  
-  // 初始化时间
-  time.value = 0
-  
-  // 初始化步数
-  moves.value = 0
-  
-  // 生成棋盘
-  generateBoard()
 }
 
 // 生成棋盘
