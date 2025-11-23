@@ -102,6 +102,22 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '数独', 
+    description: '经典的数字逻辑游戏，锻炼思维能力', 
+    icon: Grid, 
+    iconColor: '#E6A23C', 
+    path: '/sudoku' 
+  },
+  { 
+    id: 10, 
+    name: '贪吃蛇', 
+    description: '经典的贪吃蛇游戏，控制蛇吃食物成长', 
+    icon: Star, 
+    iconColor: '#F56C6C', 
+    path: '/snake' 
   }
 ])
 

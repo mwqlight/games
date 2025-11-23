@@ -85,44 +85,52 @@ const difficultyConfig = {
 }
 
 // 初始化游戏
-const initGame = () => {
-  // 清除计时器
-  if (timer.value) {
-    clearInterval(timer.value)
-    timer.value = null
+const initGame = async () => {
+  try {
+    // 清除计时器
+    if (timer.value) {
+      clearInterval(timer.value)
+      timer.value = null
+    }
+    
+    // 初始化时间
+    time.value = 0
+    
+    // 获取当前难度配置
+    const config = difficultyConfig[difficulty.value]
+    
+    // 创建新游戏
+    const response = await fetch('http://localhost:8080/api/minesweeper/new', { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows: config.rows, cols: config.cols, mines: config.mines })
+    })
+    const game = await response.json()
+    
+    // 初始化游戏状态
+    gameStatus.value = '游戏进行中'
+    gameStarted.value = false
+    
+    // 初始化棋盘
+    board.value = game.board.map(row => row.map(cell => ({
+      isMine: cell.mine,
+      revealed: cell.revealed,
+      flagged: cell.flagged,
+      adjacentMines: cell.adjacentMines
+    })))
+    
+    // 初始化剩余地雷数量
+    remainingMines.value = game.remainingMines
+    
+    // 初始化已扫雷区数量
+    clearedCells.value = game.clearedCells
+    
+    // 保存游戏ID
+    gameId.value = game.gameId
+  } catch (error) {
+    console.error('初始化游戏失败:', error)
+    gameStatus.value = '连接失败'
   }
-  
-  // 初始化时间
-  time.value = 0
-  
-  // 初始化游戏状态
-  gameStatus.value = '游戏进行中'
-  
-  // 初始化游戏开始标志
-  gameStarted.value = false
-  
-  // 获取当前难度配置
-  const config = difficultyConfig[difficulty.value]
-  
-  // 初始化棋盘
-  board.value = Array(config.rows).fill(null).map(() => Array(config.cols).fill(null).map(() => ({
-    isMine: false,
-    revealed: false,
-    flagged: false,
-    adjacentMines: 0
-  })))
-  
-  // 放置地雷
-  placeMines(config.rows, config.cols, config.mines)
-  
-  // 计算相邻地雷数量
-  calculateAdjacentMines(config.rows, config.cols)
-  
-  // 初始化剩余地雷数量
-  remainingMines.value = config.mines
-  
-  // 初始化已扫雷区数量
-  clearedCells.value = 0
 }
 
 // 放置地雷
