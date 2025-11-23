@@ -1,1 +1,8 @@
-/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/GameController.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/GameState.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/Position.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/GameStatus.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/MoveRequest.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/GameService.java
+/usr/local/share/game-space2/games/game-backend/src/main/java/com/lgames/gamebackend/snake/Direction.java
