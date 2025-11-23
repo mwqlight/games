@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <el-icon class="game-icon"><Star /></el-icon>
-          <span class="game-title">井字棋游戏</span>
+          <span class="game-title">井字游戏</span>
           <el-button 
             type="primary" 
             size="small"
@@ -22,7 +22,7 @@
         <div class="game-info">
           <div class="current-player">
             当前玩家: 
-            <span class="player-mark" :class="currentPlayer">{{ currentPlayer }}</span>
+            <span class="player-mark" :class="currentPlayer">{{ currentPlayer === 'X' ? 'X' : 'O' }}</span>
           </div>
           <div class="game-status" :class="gameStatusClass">
             {{ gameStatus }}
@@ -32,22 +32,30 @@
         <!-- 游戏棋盘 -->
         <div class="game-board">
           <div 
-            v-for="(cell, index) in board" 
-            :key="index"
-            class="board-cell"
-            :class="{ 'cell-x': cell === 'X', 'cell-o': cell === 'O', 'cell-winning': winningCells.includes(index) }"
-            @click="makeMove(index)"
+            v-for="(row, rowIndex) in board" 
+            :key="rowIndex"
+            class="board-row"
           >
-            {{ cell }}
+            <div 
+              v-for="(cell, colIndex) in row" 
+              :key="colIndex"
+              class="board-cell"
+              :class="{
+                'cell-x': cell === 'X', 
+                'cell-o': cell === 'O', 
+                'cell-winning': isWinningCell(rowIndex, colIndex),
+                'cell-disabled': gameStatus !== '游戏进行中'
+              }"
+              @click="makeMove(rowIndex, colIndex)"
+            >
+              <div class="cell-piece" :class="cell">{{ cell }}</div>
+            </div>
           </div>
         </div>
 
         <!-- 游戏控制 -->
         <div class="game-controls">
-          <el-button type="primary" @click="resetGame">重新开始</el-button>
-          <el-button @click="toggleAIMode">
-            {{ aiMode ? '关闭AI' : '开启AI' }}
-          </el-button>
+          <el-button type="primary" @click="startNewGame">开始新游戏</el-button>
         </div>
       </div>
     </el-card>
@@ -59,97 +67,118 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Star } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
 // 游戏状态
-const board = ref(['', '', '', '', '', '', '', '', ''])
+const gameId = ref(null)
+const board = ref([])
 const currentPlayer = ref('X')
 const gameStatus = ref('游戏进行中')
 const gameStatusClass = ref('status-playing')
-const winningCells = ref([])
-const aiMode = ref(false)
+const winningLine = ref([])
+const isLoading = ref(false)
 
-// 获胜组合
-const winningCombinations = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // 横向
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // 纵向
-  [0, 4, 8], [2, 4, 6] // 对角线
-]
-
-// 检查游戏是否结束
-const checkGameEnd = () => {
-  // 检查是否有玩家获胜
-  for (const combination of winningCombinations) {
-    const [a, b, c] = combination
-    if (board.value[a] && board.value[a] === board.value[b] && board.value[a] === board.value[c]) {
-      winningCells.value = combination
-      gameStatus.value = `${currentPlayer.value} 获胜！`
-      gameStatusClass.value = 'status-winning'
-      ElMessage.success(`${currentPlayer.value} 获胜！`)
-      return true
+// 初始化游戏
+const startNewGame = async () => {
+  try {
+    isLoading.value = true
+    const response = await axios.post('http://localhost:8080/api/game/start')
+    const gameState = response.data
+    gameId.value = gameState.gameId
+    // 确保棋盘是二维数组
+    if (gameState.board && gameState.board.length === 9) {
+      // 如果是一维数组，转换为3x3的二维数组
+      board.value = [
+        gameState.board.slice(0, 3),
+        gameState.board.slice(3, 6),
+        gameState.board.slice(6, 9)
+      ]
+    } else {
+      board.value = gameState.board
     }
+    currentPlayer.value = gameState.currentPlayer
+    gameStatus.value = mapGameStatus(gameState.gameStatus)
+    winningLine.value = gameState.winningLine || []
+    gameStatusClass.value = getStatusClass(gameState.gameStatus)
+  } catch (error) {
+    ElMessage.error('无法开始新游戏，请稍后重试')
+    console.error('Error starting new game:', error)
+  } finally {
+    isLoading.value = false
   }
-
-  // 检查是否平局
-  if (board.value.every(cell => cell !== '')) {
-    gameStatus.value = '平局！'
-    gameStatusClass.value = 'status-draw'
-    ElMessage.info('平局！')
-    return true
-  }
-
-  return false
 }
 
-// 玩家移动
-const makeMove = (index) => {
-  if (board.value[index] !== '' || gameStatus.value !== '游戏进行中') {
+// 落子
+const makeMove = async (rowIndex, colIndex) => {
+  if (isLoading.value || gameStatus.value !== '游戏进行中' || board.value[rowIndex][colIndex] !== null) {
     return
   }
 
-  board.value[index] = currentPlayer.value
+  try {
+    isLoading.value = true
+    const response = await axios.post('http://localhost:8080/api/game/move', {
+      gameId: gameId.value,
+      row: rowIndex,
+      col: colIndex
+    })
+    const gameState = response.data
+    // 确保棋盘是二维数组
+    if (gameState.board && gameState.board.length === 9) {
+      // 如果是一维数组，转换为3x3的二维数组
+      board.value = [
+        gameState.board.slice(0, 3),
+        gameState.board.slice(3, 6),
+        gameState.board.slice(6, 9)
+      ]
+    } else {
+      board.value = gameState.board
+    }
+    currentPlayer.value = gameState.currentPlayer
+    gameStatus.value = mapGameStatus(gameState.gameStatus)
+    winningLine.value = gameState.winningLine || []
+    gameStatusClass.value = getStatusClass(gameState.gameStatus)
 
-  if (checkGameEnd()) {
-    return
+    if (gameStatus.value !== '游戏进行中') {
+      ElMessage.success(gameStatus.value)
+    }
+  } catch (error) {
+    ElMessage.error('落子失败，请稍后重试')
+    console.error('Error making move:', error)
+  } finally {
+    isLoading.value = false
   }
+}
 
-  // 切换玩家
-  currentPlayer.value = currentPlayer.value === 'X' ? 'O' : 'X'
+// 检查是否是获胜格子
+const isWinningCell = (row, col) => {
+  if (!winningLine.value || winningLine.value.length === 0) {
+    return false
+  }
+  return winningLine.value.some(cell => cell[0] === row && cell[1] === col)
+}
 
-  // AI移动
-  if (aiMode.value && currentPlayer.value === 'O') {
-    setTimeout(aiMove, 500)
+// 映射游戏状态
+const mapGameStatus = (status) => {
+  switch (status) {
+    case 'PLAYING': return '游戏进行中'
+    case 'X_WON': return 'X 获胜！'
+    case 'O_WON': return 'O 获胜！'
+    case 'DRAW': return '平局！'
+    default: return '游戏进行中'
   }
 }
 
-// AI移动
-const aiMove = () => {
-  // 简单的AI策略：随机选择空单元格
-  const emptyCells = board.value.map((cell, index) => cell === '' ? index : null).filter(index => index !== null)
-  if (emptyCells.length === 0) return
-
-  const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-  board.value[randomIndex] = 'O'
-
-  checkGameEnd()
-  currentPlayer.value = 'X'
-}
-
-// 重置游戏
-const resetGame = () => {
-  board.value = ['', '', '', '', '', '', '', '', '']
-  currentPlayer.value = 'X'
-  gameStatus.value = '游戏进行中'
-  gameStatusClass.value = 'status-playing'
-  winningCells.value = []
-}
-
-// 切换AI模式
-const toggleAIMode = () => {
-  aiMode.value = !aiMode.value
-  resetGame()
-  ElMessage.info(aiMode.value ? 'AI模式已开启' : 'AI模式已关闭')
+// 获取状态类名
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'PLAYING': return 'status-playing'
+    case 'X_WON': return 'status-winning'
+    case 'O_WON': return 'status-winning'
+    case 'DRAW': return 'status-draw'
+    default: return 'status-playing'
+  }
 }
 
 // 返回主页
@@ -157,149 +186,220 @@ const goBack = () => {
   router.push('/')
 }
 
-// 页面挂载时加载配置
+// 页面加载时初始化游戏
 onMounted(() => {
-  // 可以从本地存储加载游戏配置
-  const gameConfig = localStorage.getItem('gameConfig')
-  if (gameConfig) {
-    const config = JSON.parse(gameConfig)
-    // 根据配置设置游戏难度等
-    console.log('游戏配置:', config)
-  }
+  startNewGame()
 })
 </script>
 
 <style scoped>
 .game-container {
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 0 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .game-card {
-  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 24px;
-  font-weight: bold;
-  color: #303133;
+  padding: 20px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .game-icon {
-  margin-right: 8px;
-  font-size: 28px;
+  font-size: 24px;
+  color: #667eea;
+  margin-right: 10px;
 }
 
-.back-button {
-  margin-left: auto;
-}
-
-.game-content {
+.game-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  flex: 1;
   text-align: center;
 }
 
+.back-button {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.game-content {
+  padding: 30px;
+}
+
 .game-info {
-  margin-bottom: 24px;
+  margin-bottom: 30px;
+  text-align: center;
 }
 
 .current-player {
   font-size: 20px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  color: #333;
 }
 
 .player-mark {
   font-weight: bold;
   font-size: 24px;
-  margin-left: 8px;
+  margin-left: 10px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  color: white;
+  animation: pulse 1.5s infinite;
 }
 
 .player-mark.X {
-  color: #409eff;
+  background: #667eea;
 }
 
 .player-mark.O {
-  color: #67c23a;
+  background: #f093fb;
 }
 
 .game-status {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: bold;
-  padding: 8px 16px;
+  padding: 10px;
   border-radius: 8px;
-  display: inline-block;
+  color: white;
+  animation: pulse 1.5s infinite;
 }
 
 .status-playing {
-  background-color: #e6f7ff;
-  color: #31708f;
+  background: #4caf50;
 }
 
 .status-winning {
-  background-color: #f0f9eb;
-  color: #67c23a;
+  background: #ff5722;
 }
 
 .status-draw {
-  background-color: #f5f7fa;
-  color: #909399;
+  background: #ff9800;
 }
 
 .game-board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 8px;
-  max-width: 300px;
-  margin: 0 auto 24px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.board-row {
+  display: flex;
 }
 
 .board-cell {
+  width: 120px;
+  height: 120px;
+  border: 2px solid #ddd;
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 48px;
-  font-weight: bold;
-  background-color: #f5f7fa;
-  border-radius: 8px;
+  align-items: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  aspect-ratio: 1 / 1;
+  background: white;
 }
 
-.board-cell:hover {
-  background-color: #e4e7ed;
+.board-cell:hover:not(.cell-disabled) {
+  background: #f5f5f5;
   transform: scale(1.05);
 }
 
+.board-cell.cell-x, .board-cell.cell-o {
+  cursor: not-allowed;
+}
+
+.cell-piece {
+  font-size: 60px;
+  font-weight: bold;
+  animation: fadeIn 0.5s ease;
+}
+
 .cell-x {
-  color: #409eff;
-  background-color: #e6f7ff;
+  color: #667eea;
 }
 
 .cell-o {
-  color: #67c23a;
-  background-color: #f0f9eb;
+  color: #f093fb;
 }
 
 .cell-winning {
-  background-color: #ffd700;
-  color: #fff;
-  animation: pulse 1s infinite;
+  background: #ffeb3b !important;
+  animation: winningPulse 1s infinite;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+.cell-disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .game-controls {
   display: flex;
-  gap: 12px;
   justify-content: center;
+}
+
+.game-controls button {
+  padding: 12px 30px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes winningPulse {
+  0% { background: #ffeb3b; }
+  50% { background: #ffc107; }
+  100% { background: #ffeb3b; }
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+  .game-card {
+    margin: 10px;
+  }
+  
+  .card-header {
+    padding: 15px;
+  }
+  
+  .game-title {
+    font-size: 20px;
+  }
+  
+  .game-content {
+    padding: 20px;
+  }
+  
+  .board-cell {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .cell-piece {
+    font-size: 45px;
+  }
 }
 </style>
