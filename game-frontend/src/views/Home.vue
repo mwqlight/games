@@ -102,6 +102,54 @@ const games = ref([
     icon: Star, 
     iconColor: '#9370DB', 
     path: '/backgammon' 
+  },
+  { 
+    id: 9, 
+    name: '扫雷', 
+    description: '经典的扫雷游戏，挑战你的逻辑思维', 
+    icon: Star, 
+    iconColor: '#FFA500', 
+    path: '/minesweeper' 
+  },
+  { 
+    id: 10, 
+    name: '贪吃蛇', 
+    description: '经典的贪吃蛇游戏，挑战你的反应速度', 
+    icon: Star, 
+    iconColor: '#32CD32', 
+    path: '/snake' 
+  },
+  { 
+    id: 11, 
+    name: '俄罗斯方块', 
+    description: '经典的俄罗斯方块游戏，挑战你的空间思维', 
+    icon: Star, 
+    iconColor: '#FF69B4', 
+    path: '/tetris' 
+  },
+  { 
+    id: 12, 
+    name: '麻将', 
+    description: '经典的麻将游戏，支持多种玩法', 
+    icon: Star, 
+    iconColor: '#8B4513', 
+    path: '/mahjong' 
+  },
+  { 
+    id: 13, 
+    name: '拼图', 
+    description: '经典的拼图游戏，挑战你的观察力', 
+    icon: Star, 
+    iconColor: '#4682B4', 
+    path: '/puzzle' 
+  },
+  { 
+    id: 14, 
+    name: '纸牌游戏', 
+    description: '经典的纸牌游戏，支持多种玩法', 
+    icon: Star, 
+    iconColor: '#D2B48C', 
+    path: '/card-game' 
   }
 ])
 

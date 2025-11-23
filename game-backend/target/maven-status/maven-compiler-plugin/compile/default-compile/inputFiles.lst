@@ -1,1 +1,11 @@
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongGameInitializer.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/PlayerAction.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongAIEngine.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongFanCalculator.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongTile.java
 /usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongGame.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongPlayer.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongGameController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongGameService.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/mahjong/MahjongActionValidator.java
