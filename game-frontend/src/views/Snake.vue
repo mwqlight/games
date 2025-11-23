@@ -61,18 +61,14 @@ const score = ref(0)
 const speed = ref(150)
 const snake = ref([])
 const food = ref({})
-const direction = ref('right')
+const direction = ref('RIGHT')
 const gameStarted = ref(false)
 const gamePaused = ref(false)
 const gameLoop = ref(null)
+const gameId = ref(null)
 
 // 游戏配置
 const boardSize = 20
-const initialSnake = [
-  { row: 10, col: 10 },
-  { row: 10, col: 9 },
-  { row: 10, col: 8 }
-]
 
 // 初始化游戏
 const initGame = () => {
@@ -94,81 +90,46 @@ const initGame = () => {
   speed.value = 150
   
   // 初始化贪吃蛇
-  snake.value = JSON.parse(JSON.stringify(initialSnake))
+  snake.value = []
   
   // 初始化方向
-  direction.value = 'right'
+  direction.value = 'RIGHT'
   
   // 初始化棋盘
   board.value = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null))
-  
-  // 放置贪吃蛇
-  for (const segment of snake.value) {
-    board.value[segment.row][segment.col] = 'snake'
-  }
-  
-  // 放置食物
-  placeFood()
   
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown)
 }
 
-// 放置食物
-const placeFood = () => {
-  let row, col
-  
-  // 随机生成食物位置，确保不在贪吃蛇身上
-  do {
-    row = Math.floor(Math.random() * boardSize)
-    col = Math.floor(Math.random() * boardSize)
-  } while (board.value[row][col] === 'snake')
-  
-  // 放置食物
-  board.value[row][col] = 'food'
-  food.value = { row, col }
-}
-
-// 处理键盘事件
-const handleKeyDown = (event) => {
-  // 检查游戏是否已经开始
-  if (!gameStarted.value || gamePaused.value) {
-    return
-  }
-  
-  // 处理方向键
-  switch (event.key) {
-    case 'ArrowUp':
-      if (direction.value !== 'down') {
-        direction.value = 'up'
-      }
-      break
-    case 'ArrowDown':
-      if (direction.value !== 'up') {
-        direction.value = 'down'
-      }
-      break
-    case 'ArrowLeft':
-      if (direction.value !== 'right') {
-        direction.value = 'left'
-      }
-      break
-    case 'ArrowRight':
-      if (direction.value !== 'left') {
-        direction.value = 'right'
-      }
-      break
-  }
-}
-
 // 开始游戏
-const startGame = () => {
-  gameStatus.value = '游戏进行中'
-  gameStarted.value = true
-  gamePaused.value = false
-  
-  // 开始游戏循环
-  gameLoop.value = setInterval(updateGame, speed.value)
+const startGame = async () => {
+  try {
+    const response = await fetch('/api/game/start', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to start game')
+    }
+    
+    const gameState = await response.json()
+    gameId.value = gameState.gameId
+    updateBoard(gameState)
+    
+    gameStatus.value = '游戏进行中'
+    gameStarted.value = true
+    gamePaused.value = false
+    
+    // 开始游戏循环
+    gameLoop.value = setInterval(updateGame, speed.value)
+  } catch (error) {
+    console.error('Error starting game:', error)
+    gameStatus.value = '游戏开始失败'
+  }
 }
 
 // 暂停游戏
@@ -197,68 +158,102 @@ const stopGame = () => {
 }
 
 // 更新游戏
-const updateGame = () => {
-  // 获取贪吃蛇头部
-  const head = snake.value[0]
-  
-  // 计算新的头部位置
-  let newHead
-  
-  switch (direction.value) {
-    case 'up':
-      newHead = { row: head.row - 1, col: head.col }
-      break
-    case 'down':
-      newHead = { row: head.row + 1, col: head.col }
-      break
-    case 'left':
-      newHead = { row: head.row, col: head.col - 1 }
-      break
-    case 'right':
-      newHead = { row: head.row, col: head.col + 1 }
-      break
-  }
-  
-  // 检查是否撞墙
-  if (newHead.row < 0 || newHead.row >= boardSize || newHead.col < 0 || newHead.col >= boardSize) {
-    stopGame()
+const updateGame = async () => {
+  if (!gameId.value || !gameStarted.value || gamePaused.value) {
     return
   }
   
-  // 检查是否撞到自己
-  if (board.value[newHead.row][newHead.col] === 'snake') {
-    stopGame()
-    return
-  }
-  
-  // 检查是否吃到食物
-  if (board.value[newHead.row][newHead.col] === 'food') {
-    // 增加得分
-    score.value += 10
+  try {
+    const response = await fetch('/api/game/move', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        gameId: gameId.value,
+        direction: direction.value.toUpperCase()
+      })
+    })
     
-    // 增加贪吃蛇长度
-    snake.value.unshift(newHead)
-    board.value[newHead.row][newHead.col] = 'snake'
-    
-    // 放置新的食物
-    placeFood()
-    
-    // 提高速度
-    if (speed.value > 50) {
-      speed.value -= 5
-      
-      // 重新设置游戏循环
-      clearInterval(gameLoop.value)
-      gameLoop.value = setInterval(updateGame, speed.value)
+    if (!response.ok) {
+      throw new Error('Failed to move snake')
     }
-  } else {
-    // 移动贪吃蛇
-    snake.value.unshift(newHead)
-    board.value[newHead.row][newHead.col] = 'snake'
     
-    // 移除尾部
-    const tail = snake.value.pop()
-    board.value[tail.row][tail.col] = null
+    const gameState = await response.json()
+    if (gameState) {
+      updateBoard(gameState)
+      
+      if (gameState.gameStatus === 'GAME_OVER') {
+        stopGame()
+      }
+    } else {
+      console.error('Invalid game state received')
+      stopGame()
+    }
+  } catch (error) {
+    console.error('Error updating game:', error)
+    stopGame()
+  }
+}
+
+// 更新棋盘
+const updateBoard = (gameState) => {
+  // 重置棋盘
+  board.value = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null))
+  
+  // 更新得分
+  score.value = gameState.score
+  
+  // 更新贪吃蛇
+  snake.value = gameState.snakeBody.map(segment => ({
+    row: segment.y,
+    col: segment.x
+  }))
+  
+  // 放置贪吃蛇
+  for (const segment of snake.value) {
+    board.value[segment.row][segment.col] = 'snake'
+  }
+  
+  // 更新食物
+  food.value = {
+    row: gameState.foodPosition.y,
+    col: gameState.foodPosition.x
+  }
+  
+  // 放置食物
+  board.value[food.value.row][food.value.col] = 'food'
+}
+
+// 处理键盘事件
+const handleKeyDown = (event) => {
+  // 检查游戏是否已经开始
+  if (!gameStarted.value || gamePaused.value) {
+    return
+  }
+  
+  // 处理方向键
+  switch (event.key) {
+    case 'ArrowUp':
+      if (direction.value !== 'DOWN') {
+        direction.value = 'UP'
+      }
+      break
+    case 'ArrowDown':
+      if (direction.value !== 'UP') {
+        direction.value = 'DOWN'
+      }
+      break
+    case 'ArrowLeft':
+      if (direction.value !== 'RIGHT') {
+        direction.value = 'LEFT'
+      }
+      break
+    case 'ArrowRight':
+      if (direction.value !== 'LEFT') {
+        direction.value = 'RIGHT'
+      }
+      break
   }
 }
 
