@@ -1,1 +1,5 @@
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/tictactoe/model/GameState.java
 /usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/GameBackendApplication.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/tictactoe/controller/TicTacToeController.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/tictactoe/model/MoveRequest.java
+/usr/local/share/lgames/games/game-backend/src/main/java/com/lgames/gamebackend/tictactoe/service/TicTacToeService.java
