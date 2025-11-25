@@ -382,7 +382,180 @@ const checkGameEnd = () => {
       } else {
         score.value = 0
       }
+    } else {
+      // AI移动
+      if (currentPlayer.value === 2) {
+        setTimeout(aiMove, 500)
+      }
     }
+  } else {
+    // AI移动
+    if (currentPlayer.value === 2) {
+      setTimeout(aiMove, 500)
+    }
+  }
+}
+
+// AI移动
+const aiMove = () => {
+  // 使用启发式算法选择最优移动
+  const validMoves = []
+  for (let row = 0; row < boardSize.value; row++) {
+    for (let col = 0; col < boardSize.value; col++) {
+      if (board.value[row][col].validMove) {
+        validMoves.push({ row, col })
+      }
+    }
+  }
+
+  if (validMoves.length === 0) return
+
+  let bestScore = -Infinity
+  let bestMove = null
+
+  for (const move of validMoves) {
+    // 模拟AI移动
+    board.value[move.row][move.col].value = 2
+    // 翻转对方的棋子
+    flipPieces(move.row, move.col)
+    // 计算分数
+    const score = evaluateBoard(board.value)
+    // 撤销移动
+    board.value[move.row][move.col].value = 0
+    // 撤销翻转
+    undoFlipPieces(move.row, move.col)
+    // 更新最佳分数和最佳移动
+    if (score > bestScore) {
+      bestScore = score
+      bestMove = move
+    }
+  }
+
+  // 执行最佳移动
+  board.value[bestMove.row][bestMove.col].value = 2
+  // 翻转对方的棋子
+  flipPieces(bestMove.row, bestMove.col)
+  // 更新棋子数量
+  updatePieceCount()
+  // 切换玩家
+  currentPlayer.value = 1
+  // 检查有效移动
+  checkValidMoves()
+  // 检查游戏是否结束
+  checkGameEnd()
+}
+
+// 评估棋盘
+const evaluateBoard = (board) => {
+  let score = 0
+  
+  // 棋子数量
+  let black = 0
+  let white = 0
+  
+  for (let row = 0; row < boardSize.value; row++) {
+    for (let col = 0; col < boardSize.value; col++) {
+      if (board[row][col].value === 1) {
+        black++
+      } else if (board[row][col].value === 2) {
+        white++
+      }
+    }
+  }
+  
+  score += (white - black) * 10
+  
+  // 角落位置
+  const corners = [
+    { row: 0, col: 0 },
+    { row: 0, col: 7 },
+    { row: 7, col: 0 },
+    { row: 7, col: 7 }
+  ]
+  
+  for (const corner of corners) {
+    if (board[corner.row][corner.col].value === 2) {
+      score += 50
+    } else if (board[corner.row][corner.col].value === 1) {
+      score -= 50
+    }
+  }
+  
+  // 边缘位置
+  for (let i = 1; i < 7; i++) {
+    if (board[0][i].value === 2) score += 10
+    if (board[7][i].value === 2) score += 10
+    if (board[i][0].value === 2) score += 10
+    if (board[i][7].value === 2) score += 10
+    
+    if (board[0][i].value === 1) score -= 10
+    if (board[7][i].value === 1) score -= 10
+    if (board[i][0].value === 1) score -= 10
+    if (board[i][7].value === 1) score -= 10
+  }
+  
+  return score
+}
+
+// 撤销翻转棋子
+const undoFlipPieces = (rowIndex, colIndex) => {
+  // 检查八个方向
+  const directions = [
+    { row: -1, col: -1 }, // 左上
+    { row: -1, col: 0 },  // 上
+    { row: -1, col: 1 },  // 右上
+    { row: 0, col: -1 },  // 左
+    { row: 0, col: 1 },   // 右
+    { row: 1, col: -1 },  // 左下
+    { row: 1, col: 0 },   // 下
+    { row: 1, col: 1 }    // 右下
+  ]
+  
+  for (let i = 0; i < directions.length; i++) {
+    undoFlipPiecesInDirection(rowIndex, colIndex, directions[i].row, directions[i].col)
+  }
+}
+
+// 撤销翻转特定方向的棋子
+const undoFlipPiecesInDirection = (rowIndex, colIndex, rowDelta, colDelta) => {
+  // 获取对方玩家
+  const opponent = 1
+  
+  // 检查相邻单元格
+  let newRow = rowIndex + rowDelta
+  let newCol = colIndex + colDelta
+  
+  if (newRow < 0 || newRow >= boardSize.value || newCol < 0 || newCol >= boardSize.value) {
+    return
+  }
+  
+  if (board.value[newRow][newCol].value !== 2) {
+    return
+  }
+  
+  // 记录需要翻转的棋子
+  const piecesToFlip = []
+  
+  // 继续检查下一个单元格
+  while (newRow >= 0 && newRow < boardSize.value && newCol >= 0 && newCol < boardSize.value) {
+    if (board.value[newRow][newCol].value === 0) {
+      return
+    }
+    
+    if (board.value[newRow][newCol].value === 1) {
+      // 翻转棋子
+      for (let i = 0; i < piecesToFlip.length; i++) {
+        board.value[piecesToFlip[i].row][piecesToFlip[i].col].value = opponent
+      }
+      
+      return
+    }
+    
+    // 添加到需要翻转的棋子列表
+    piecesToFlip.push({ row: newRow, col: newCol })
+    
+    newRow += rowDelta
+    newCol += colDelta
   }
 }
 

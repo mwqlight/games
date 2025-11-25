@@ -172,7 +172,7 @@ const makeMove = (row, col) => {
 
 // AI移动
 const aiMove = () => {
-  // 简单的AI策略：随机选择空单元格
+  // 使用启发式算法选择最优移动
   const emptyCells = []
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j < boardSize; j++) {
@@ -184,14 +184,125 @@ const aiMove = () => {
 
   if (emptyCells.length === 0) return
 
-  const randomIndex = Math.floor(Math.random() * emptyCells.length)
-  const [row, col] = emptyCells[randomIndex]
-  
-  saveHistory()
-  board.value[row][col] = 'white'
+  let bestScore = -Infinity
+  let bestMove = null
 
-  checkGameEnd(row, col)
+  for (const [row, col] of emptyCells) {
+    // 模拟AI移动
+    board.value[row][col] = 'white'
+    // 计算分数
+    const score = evaluateBoard(board.value)
+    // 撤销移动
+    board.value[row][col] = ''
+    // 更新最佳分数和最佳移动
+    if (score > bestScore) {
+      bestScore = score
+      bestMove = [row, col]
+    }
+  }
+
+  // 执行最佳移动
+  const [bestRow, bestCol] = bestMove
+  saveHistory()
+  board.value[bestRow][bestCol] = 'white'
+
+  checkGameEnd(bestRow, bestCol)
   currentPlayer.value = 'black'
+}
+
+// 评估棋盘
+const evaluateBoard = (board) => {
+  let score = 0
+  
+  // 评估每一行
+  for (let i = 0; i < boardSize; i++) {
+    score += evaluateLine(board[i])
+  }
+  
+  // 评估每一列
+  for (let j = 0; j < boardSize; j++) {
+    const column = []
+    for (let i = 0; i < boardSize; i++) {
+      column.push(board[i][j])
+    }
+    score += evaluateLine(column)
+  }
+  
+  // 评估主对角线
+  for (let i = 0; i <= boardSize - 5; i++) {
+    const diagonal1 = []
+    const diagonal2 = []
+    for (let j = 0; j < boardSize - i; j++) {
+      diagonal1.push(board[i + j][j])
+      diagonal2.push(board[j][i + j])
+    }
+    score += evaluateLine(diagonal1)
+    score += evaluateLine(diagonal2)
+  }
+  
+  // 评估副对角线
+  for (let i = 1; i <= boardSize - 5; i++) {
+    const diagonal1 = []
+    const diagonal2 = []
+    for (let j = 0; j < boardSize - i; j++) {
+      diagonal1.push(board[i + j][boardSize - 1 - j])
+      diagonal2.push(board[j][boardSize - 1 - i - j])
+    }
+    score += evaluateLine(diagonal1)
+    score += evaluateLine(diagonal2)
+  }
+  
+  return score
+}
+
+// 评估一条线（行、列或对角线）
+const evaluateLine = (line) => {
+  let score = 0
+  const patterns = {
+    'wwwww': 10000, // 五连
+    'wwww_': 1000,  // 活四
+    '_wwww': 1000,  // 活四
+    'www__': 100,   // 活三
+    '__www': 100,   // 活三
+    'www_w': 100,   // 活三
+    'w_www': 100,   // 活三
+    'ww___': 10,    // 活二
+    '___ww': 10,    // 活二
+    'ww__w': 10,    // 活二
+    'w__ww': 10,    // 活二
+    'ww_w_': 10,    // 活二
+    '_w_ww': 10,    // 活二
+    'w_ww_': 10,    // 活二
+    '_ww_w': 10,    // 活二
+    'wwwww': -10000, // 对方五连
+    'wwww_': -1000,  // 对方活四
+    '_wwww': -1000,  // 对方活四
+    'www__': -100,   // 对方活三
+    '__www': -100,   // 对方活三
+    'www_w': -100,   // 对方活三
+    'w_www': -100,   // 对方活三
+    'ww___': -10,    // 对方活二
+    '___ww': -10,    // 对方活二
+    'ww__w': -10,    // 对方活二
+    'w__ww': -10,    // 对方活二
+    'ww_w_': -10,    // 对方活二
+    '_w_ww': -10,    // 对方活二
+    'w_ww_': -10,    // 对方活二
+    '_ww_w': -10     // 对方活二
+  }
+  
+  // 将线转换为字符串
+  const lineStr = line.join('')
+  
+  // 检查所有模式
+  for (const pattern in patterns) {
+    const regex = new RegExp(pattern.replace(/w/g, 'white').replace(/_/g, '').replace(/b/g, 'black'))
+    if (regex.test(lineStr)) {
+      score += patterns[pattern]
+    }
+  }
+  
+  return score
 }
 
 // 重置游戏
