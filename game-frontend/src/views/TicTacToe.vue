@@ -125,15 +125,83 @@ const makeMove = (index) => {
 
 // AI移动
 const aiMove = () => {
-  // 简单的AI策略：随机选择空单元格
+  // 使用极小极大算法选择最优移动
   const emptyCells = board.value.map((cell, index) => cell === '' ? index : null).filter(index => index !== null)
   if (emptyCells.length === 0) return
 
-  const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-  board.value[randomIndex] = 'O'
+  let bestScore = -Infinity
+  let bestMove = null
+
+  for (const index of emptyCells) {
+    // 模拟AI移动
+    board.value[index] = 'O'
+    // 计算分数
+    const score = minimax(board.value, 0, false)
+    // 撤销移动
+    board.value[index] = ''
+    // 更新最佳分数和最佳移动
+    if (score > bestScore) {
+      bestScore = score
+      bestMove = index
+    }
+  }
+
+  // 执行最佳移动
+  board.value[bestMove] = 'O'
 
   checkGameEnd()
   currentPlayer.value = 'X'
+}
+
+// 极小极大算法
+const minimax = (board, depth, isMaximizing) => {
+  // 检查游戏是否结束
+  const winner = checkWinner(board)
+  if (winner === 'O') return 10 - depth
+  if (winner === 'X') return depth - 10
+  if (board.every(cell => cell !== '')) return 0
+
+  if (isMaximizing) {
+    let bestScore = -Infinity
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === '') {
+        board[i] = 'O'
+        const score = minimax(board, depth + 1, false)
+        board[i] = ''
+        bestScore = Math.max(score, bestScore)
+      }
+    }
+    return bestScore
+  } else {
+    let bestScore = Infinity
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === '') {
+        board[i] = 'X'
+        const score = minimax(board, depth + 1, true)
+        board[i] = ''
+        bestScore = Math.min(score, bestScore)
+      }
+    }
+    return bestScore
+  }
+}
+
+// 检查获胜者
+const checkWinner = (board) => {
+  const winningCombinations = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // 横向
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // 纵向
+    [0, 4, 8], [2, 4, 6] // 对角线
+  ]
+
+  for (const combination of winningCombinations) {
+    const [a, b, c] = combination
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return board[a]
+    }
+  }
+
+  return null
 }
 
 // 重置游戏
